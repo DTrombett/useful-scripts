@@ -28,7 +28,7 @@ let page: Awaitable<Page> = browser.newPage({
 	...devices["Desktop Chrome HiDPI"],
 	// Use a high resolution for the screenshot
 	deviceScaleFactor: 8,
-	viewport: { width: 7680, height: 4240 },
+	viewport: { width: 7680, height: 4320 },
 	screen: { width: 7680, height: 4320 },
 });
 // Create query parameters for the URL
