@@ -11,7 +11,8 @@
 		"url": "https://github.com/DTrombett/useful-scripts/issues"
 	},
 	"dependencies": {
-		"playwright": "^1.51.1"
+		"playwright": "^1.51.1",
+		"undici": "^7.7.0"
 	},
 	"devDependencies": {
 		"@tsconfig/node22": "^22.0.1",
