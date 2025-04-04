@@ -73,7 +73,8 @@ const promises = [];
 // Initialize the date to today
 const date = new Date();
 
-for (let i = 0; i < days; date.setDate(date.getDate() - 1), i++)
+for (let i = 0; i < days; i++) {
+	// Fetch the songs for the current date
 	promises.push(
 		fetchSongs(
 			`${date.getFullYear()}${(date.getMonth() + 1)
@@ -81,6 +82,9 @@ for (let i = 0; i < days; date.setDate(date.getDate() - 1), i++)
 				.padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}`
 		)
 	);
+	// Decrement the date by one day
+	date.setDate(date.getDate() - 1);
+}
 // Wait for all the requests to finish
 await Promise.all(promises);
 // Close the stream
