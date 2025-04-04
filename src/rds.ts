@@ -6,6 +6,8 @@ import { argv, stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { request } from "undici";
 
+// Exit gracefully when hitting Ctrl+C
+process.once("uncaughtException", process.exit.bind(process, 1));
 // Ensure the .cache directory exists
 await mkdir(".cache", { recursive: true });
 // Create a write stream to the file
