@@ -1,6 +1,5 @@
 // Save all RDS playlist tracks to a file
 import { createWriteStream } from "node:fs";
-import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { argv, stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
@@ -8,8 +7,6 @@ import { request } from "undici";
 
 // Exit gracefully when hitting Ctrl+C
 process.once("uncaughtException", process.exit.bind(process, 1));
-// Ensure the .cache directory exists
-await mkdir(".cache", { recursive: true });
 // Create a write stream to the file
 const stream = createWriteStream(".cache/tracks.txt");
 // Cache the tracks to avoid duplicates
