@@ -11,7 +11,7 @@ await mkdir(".cache", { recursive: true });
 // Create a write stream to the file
 const stream = createWriteStream(".cache/tracks.txt");
 // Cache the tracks to avoid duplicates
-const tracks: string[] = [];
+const tracks = new Set<string>();
 /**
  * Fetch the songs for a specific day from RDS API
  * @param day - Date in YYYYMMDD format
@@ -39,9 +39,9 @@ const fetchSongs = async (day: string) => {
 			const track = `${title} ${artist}`;
 
 			// Check if the track is already in the cache
-			if (!tracks.includes(track)) {
+			if (!tracks.has(track)) {
 				// Add to the cache
-				tracks.push(track);
+				tracks.add(track);
 				// Write to the file
 				stream.write(`${track}\n`);
 				// Also output to the console
@@ -58,7 +58,7 @@ if (!days) {
 
 	// Prompt the user for the number of days to fetch
 	days = Number(
-		await rl.question("Number of days to fetch (max: 2017-02-27): ")
+		await rl.question("Number of days to fetch (up to 2017-02-27): ")
 	);
 	// Check if the number is valid
 	if (isNaN(days) || days < 1) {
@@ -87,7 +87,7 @@ await Promise.all(promises);
 stream.end();
 // Log the success message
 console.log(
-	`\x1b[32mSaved ${tracks.length} tracks to ${resolve(
+	`\x1b[32mSaved ${tracks.size} tracks to ${resolve(
 		".cache/tracks.txt"
 	)}\x1b[0m`
 );
