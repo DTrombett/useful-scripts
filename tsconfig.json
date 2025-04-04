@@ -1,0 +1,14 @@
+{
+	"include": ["src/**/*"],
+	"extends": [
+		"@tsconfig/recommended/tsconfig.json",
+		"@tsconfig/strictest/tsconfig.json",
+		"@tsconfig/node22/tsconfig.json"
+	],
+	"compilerOptions": {
+		"noEmit": true,
+		"outDir": "dist",
+		"pretty": true,
+		"sourceMap": true
+	}
+}
