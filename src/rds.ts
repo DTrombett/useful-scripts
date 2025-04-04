@@ -52,7 +52,7 @@ const fetchSongs = async (day: string) => {
 		}
 	}
 };
-let days = Number(argv[3]);
+let days = Number(argv[0]);
 
 if (!days) {
 	// Initialize the readline interface
