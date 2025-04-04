@@ -5,8 +5,6 @@ import { argv, stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { request } from "undici";
 
-// Exit gracefully when hitting Ctrl+C
-process.once("uncaughtException", process.exit.bind(process, 1));
 // Create a write stream to the file
 const stream = createWriteStream(".cache/tracks.txt");
 // Cache the tracks to avoid duplicates
@@ -54,7 +52,10 @@ let days = Number(argv[0]);
 if (!days) {
 	// Initialize the readline interface
 	const rl = createInterface(stdin, stdout);
+	const listener = process.exit.bind(process, 1);
 
+	// Exit gracefully when hitting Ctrl+C
+	process.once("uncaughtException", listener);
 	// Prompt the user for the number of days to fetch
 	days = Number(
 		await rl.question("Number of days to fetch (up to 2017-02-27): ")
@@ -66,6 +67,8 @@ if (!days) {
 	}
 	// Close the readline interface
 	rl.close();
+	// Remove the listener
+	process.removeListener("uncaughtException", listener);
 }
 // Create the array of promises
 const promises = [];
