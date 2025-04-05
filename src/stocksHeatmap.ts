@@ -12,7 +12,7 @@ let browser: Awaitable<Browser> = chromium.launch();
 let page: Awaitable<Page> = browser.then(b =>
 	// Create the page
 	b.newPage({
-		baseURL: "https://finance.yahoo.com/markets/",
+		baseURL: "https://finance.yahoo.com/",
 		...devices["Desktop Chrome HiDPI"],
 		// Use a high resolution for the screenshot
 		deviceScaleFactor: 4,
@@ -30,18 +30,19 @@ const promise: Promise<unknown> = page.then(p =>
 
 // Initialize the readline interface
 const rl = createInterface(stdin, stdout);
-// Prompt the user for the heatmap type
-const heatmapType =
-	(await rl.question("Heatmap type (most-active/trending/gainers/losers): ")) ||
-	"most-active";
+// Prompt the user for the heatmap URL
+const heatmapURL =
+	(await rl.question(
+		"Yahoo finance url (https://finance.yahoo.com/markets/stocks/most-active/heatmap): "
+	)) || "markets/stocks/most-active/heatmap";
 
 browser = await browser;
 page = await page;
 // Open the page with the heatmap
-promise.then(() => page.goto(`stocks/${heatmapType}/heatmap`));
+promise.then(() => page.goto(heatmapURL, { waitUntil: "domcontentloaded" }));
 // Prompt the user for the path
 // Save to the downloads folder by default
-const defaultPath = join(homedir(), "downloads", `${heatmapType}.png`);
+const defaultPath = join(homedir(), "downloads", "heatmap.png");
 const path =
 	(await rl.question(`Output file name or path (${defaultPath}): `)) ||
 	defaultPath;
@@ -52,6 +53,7 @@ await promise;
 console.log("\x1b[33mSaving screenshot...\x1b[0m");
 await page
 	.getByTestId("heatmap")
+	.getByRole("region")
 	.first()
 	// Force png format to increase quality and add transparency
 	.screenshot({
