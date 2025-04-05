@@ -6,6 +6,7 @@
 		"@tsconfig/node22/tsconfig.json"
 	],
 	"compilerOptions": {
+		"allowImportingTsExtensions": true,
 		"noEmit": true,
 		"outDir": "dist",
 		"pretty": true,
