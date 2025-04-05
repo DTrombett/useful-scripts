@@ -48,19 +48,18 @@ const search = new URLSearchParams({
 // Open the page with the tweet embed
 browser = await browser;
 page = await page;
-let res: Promise<any> = page.goto(`Tweet.html?${search}`, {
-	waitUntil: "networkidle",
-});
+page.setDefaultTimeout(10_000);
+let res: Promise<any> = page.goto(`Tweet.html?${search}`);
 // Ask the user if the useless elements should be removed
 if ((await rl.question("Remove useless elements (Y/n): ")) !== "n")
 	res = Promise.all([
-		res
-			.then(() => page.getByText("·Follow", { exact: true }).all())
-			.then(elements => Promise.all(elements.map(removeElement))),
+		res,
 		removeElement(page.getByText(/^\d*ReplyCopy link to post$/)),
 		removeElement(
 			page
-				.locator("div", { hasText: /^Read (\d+ replies|more on (X|Twitter))$/ })
+				.locator("div", {
+					hasText: /^Read (\d+ repl(ies|y)|more on (X|Twitter))$/,
+				})
 				.nth(-2)
 		),
 	]);
