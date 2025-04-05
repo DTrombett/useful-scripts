@@ -57,7 +57,6 @@ await page
 	.screenshot({
 		omitBackground: true,
 		path: path.replace(/(\.[^.]*)?$/, ".png"),
-		scale: "device",
 	});
 // Log the success message
 console.log(`\x1b[32mScreenshot saved to ${path}\x1b[0m`);
