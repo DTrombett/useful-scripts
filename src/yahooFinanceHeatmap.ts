@@ -1,4 +1,4 @@
-// Create a screenshot of a heatmap of the today market stocks
+// Create a screenshot of market heatmap stocks
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { stdin, stdout } from "node:process";
@@ -46,11 +46,13 @@ const defaultPath = join(homedir(), "downloads", "heatmap.png");
 const path =
 	(await rl.question(`Output file name or path (${defaultPath}): `)) ||
 	defaultPath;
+// Exit gracefully
+rl.close();
 // Wait for the page to finish loading
-console.log("\x1b[33mLoading page...\x1b[0m");
+stdout.write("\x1b[33mLoading page...\x1b[0m\n");
 await promise;
 // Save the screenshot
-console.log("\x1b[33mSaving screenshot...\x1b[0m");
+stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
 await page
 	.getByTestId("heatmap")
 	.getByRole("region")
@@ -63,8 +65,6 @@ await page
 		style: ":root { --surface1: transparent !important; }",
 	});
 // Log the success message
-console.log(`\x1b[32mScreenshot saved to ${path}\x1b[0m`);
-// Exit gracefully
-rl.close();
+stdout.write(`\x1b[32mScreenshot saved to ${path}\x1b[0m\n`);
 await page.close();
 await browser.close();

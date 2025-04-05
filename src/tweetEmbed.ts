@@ -1,7 +1,7 @@
 // Create a screenshot of a tweet from its embed, using Playwright
 import { homedir } from "node:os";
-import { join } from "node:path";
-import { stdin, stdout } from "node:process";
+import { join, resolve } from "node:path";
+import { exit, stderr, stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { chromium, devices, type Browser, type Page } from "playwright";
 
@@ -16,8 +16,8 @@ const tweetId = (await rl.question("Tweet ID or URL: ")).match(
 
 // Check if the tweet ID is valid
 if (!tweetId) {
-	console.error("\x1b[31mInvalid tweet ID or URL\x1b[0m");
-	process.exit(1);
+	stderr.write("\x1b[31mInvalid tweet ID or URL\x1b[0m\n");
+	exit(1);
 }
 // Create the browser page
 browser = await browser;
@@ -48,7 +48,7 @@ const path =
 // Wait for the page to finish loading
 await res;
 // Log the saving message
-console.log("\x1b[33mSaving screenshot...\x1b[0m");
+stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
 // Save the screenshot
 await page
 	.getByRole("article")
@@ -59,7 +59,7 @@ await page
 		path: path.replace(/(\.[^.]*)?$/, ".png"),
 	});
 // Log the success message
-console.log(`\x1b[32mScreenshot saved to ${path}\x1b[0m`);
+stdout.write(`\x1b[32mScreenshot saved to ${resolve(path)}\x1b[0m\n`);
 // Exit gracefully
 rl.close();
 await page.close();
