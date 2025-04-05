@@ -57,7 +57,7 @@ if ((await rl.question("Remove useless elements (Y/n): ")) !== "n")
 		res
 			.then(() => page.getByText("·Follow", { exact: true }).all())
 			.then(elements => Promise.all(elements.map(removeElement))),
-		removeElement(page.getByText(/^\d?ReplyCopy link to post$/)),
+		removeElement(page.getByText(/^\d*ReplyCopy link to post$/)),
 		removeElement(
 			page
 				.locator("div", { hasText: /^Read (\d+ replies|more on (X|Twitter))$/ })
