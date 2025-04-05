@@ -7,6 +7,17 @@ import { chromium, devices, type Browser, type Page } from "playwright";
 
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();
+// Create the browser page
+let page: Awaitable<Page> = browser.then(b =>
+	b.newPage({
+		baseURL: "https://platform.twitter.com/embed/",
+		...devices["Desktop Chrome HiDPI"],
+		// Use a high resolution for the screenshot
+		deviceScaleFactor: 8,
+		viewport: { width: 7680, height: 4320 },
+		screen: { width: 7680, height: 4320 },
+	})
+);
 // Initialize the readline interface
 const rl = createInterface(stdin, stdout);
 // Prompt the user for the tweet ID or URL
@@ -19,29 +30,21 @@ if (!tweetId) {
 	stderr.write("\x1b[31mInvalid tweet ID or URL\x1b[0m\n");
 	exit(1);
 }
-// Create the browser page
-browser = await browser;
-let page: Awaitable<Page> = browser.newPage({
-	baseURL: "https://platform.twitter.com/embed/",
-	...devices["Desktop Chrome HiDPI"],
-	// Use a high resolution for the screenshot
-	deviceScaleFactor: 8,
-	viewport: { width: 7680, height: 4320 },
-	screen: { width: 7680, height: 4320 },
-});
 // Create query parameters for the URL
 const search = new URLSearchParams({
 	dnt: "true",
 	id: tweetId,
-	lang: (await rl.question("Language (en): ")) || "en",
+	lang: (await rl.question("Language (en): "))!,
 	theme: (await rl.question("Theme (dark): ")) || "dark",
+	hideThread: (await rl.question("Hide thread (false): "))!,
 });
 // Open the page with the tweet embed
+browser = await browser;
 page = await page;
 const res = page.goto(`Tweet.html?${search}`, { waitUntil: "networkidle" });
 // Prompt the user for the path
 // Save to the downloads folder by default
-const defaultPath = join(homedir(), "downloads", `${tweetId}.png`);
+const defaultPath = join(homedir(), "Downloads", `${tweetId}.png`);
 const path =
 	(await rl.question(`Output file name or path (${defaultPath}): `)) ||
 	defaultPath;
