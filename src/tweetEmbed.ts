@@ -46,10 +46,10 @@ const path =
 	(await rl.question(`Output file name or path (${defaultPath}): `)) ||
 	defaultPath;
 // Wait for the page to finish loading
+stdout.write(`\x1b[33mLoading ${page.url()}...\x1b[0m\n`);
 await res;
-// Log the saving message
-stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
 // Save the screenshot
+stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
 await page
 	.getByRole("article")
 	.first()
