@@ -3,8 +3,15 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { exit, stderr, stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { chromium, devices, type Browser, type Page } from "playwright";
+import {
+	chromium,
+	devices,
+	type Browser,
+	type Locator,
+	type Page,
+} from "playwright";
 
+const removeElement = (element: Locator) => element.evaluate(el => el.remove());
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();
 // Create the browser page
@@ -41,7 +48,20 @@ const search = new URLSearchParams({
 // Open the page with the tweet embed
 browser = await browser;
 page = await page;
-const res = page.goto(`Tweet.html?${search}`, { waitUntil: "networkidle" });
+let res: Promise<any> = page.goto(`Tweet.html?${search}`, {
+	waitUntil: "networkidle",
+});
+// Ask the user if the useless elements should be removed
+if ((await rl.question("Remove useless elements (Y/n): ")) !== "n")
+	res = Promise.all([
+		res
+			.then(() => page.getByText("·Follow", { exact: true }).all())
+			.then(elements => Promise.all(elements.map(removeElement))),
+		removeElement(page.getByText(/^\d+ReplyCopy link to post$/)),
+		removeElement(
+			page.locator("div", { hasText: /^Read \d+ replies$/ }).nth(-2)
+		),
+	]);
 // Prompt the user for the path
 // Save to the downloads folder by default
 const defaultPath = join(homedir(), "Downloads", `${tweetId}.png`);
@@ -60,6 +80,7 @@ await page
 	.screenshot({
 		omitBackground: true,
 		path: path.replace(/(\.[^.]*)?$/, ".png"),
+		style: "a[aria-label='X Ads info and privacy'] { visibility: hidden; }",
 	});
 // Log the success message
 stdout.write(`\x1b[32mScreenshot saved to ${resolve(path)}\x1b[0m\n`);
