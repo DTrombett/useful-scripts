@@ -5,8 +5,6 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { chromium, devices, type Browser, type Page } from "playwright";
 
-// Exit gracefully when hitting Ctrl+C
-process.once("uncaughtException", process.exit.bind(process, 1));
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();
 // Initialize the readline interface
