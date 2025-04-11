@@ -11,7 +11,8 @@ import {
 	type Page,
 } from "playwright";
 
-const removeElement = (element: Locator) => element.evaluate(el => el.remove());
+const removeElement = (element: Locator, timeout = 10_000) =>
+	element.evaluate(el => el.remove(), null, { timeout });
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();
 // Create the browser page
@@ -49,12 +50,23 @@ const search = new URLSearchParams({
 browser = await browser;
 page = await page;
 page.setDefaultTimeout(10_000);
+// Eventually remove the "Watch on X" buttons
+(async () => {
+	const element = page
+		.getByRole("link", { name: "Watch on X", exact: true })
+		.first();
+
+	while (true) await removeElement(element, 0);
+})().catch(() => {});
+// Hang the video request to avoid the codec error
+page.route(/\.mp4(\?.*)?$/, () => new Promise(() => {}));
+// Open the page with the tweet embed
 let res: Promise<any> = page.goto(`Tweet.html?${search}`);
 // Ask the user if the useless elements should be removed
 if ((await rl.question("Remove useless elements (Y/n): ")) !== "n")
 	res = Promise.all([
 		res,
-		removeElement(page.getByText(/^\d*ReplyCopy link to post$/)),
+		removeElement(page.getByText(/^[0-9.]*[A-Z]?ReplyCopy link to post$/)),
 		removeElement(
 			page
 				.locator("div", {
