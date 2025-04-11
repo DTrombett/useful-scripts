@@ -27,15 +27,11 @@ export const getUserChoice = async <T>(
 				)
 				.join("\n")}\n`
 		);
-	// Save original raw mode state
-	const { isRaw } = stdin;
 
 	// Hide cursor and display question
 	stdout.write(`\x1b[?25l\x1b[1m${question}\x1b[0m\n`);
 	// Display choices
 	render(false);
-	// Enable raw mode for stdin
-	stdin.setRawMode(true);
 	return new Promise<T>(resolve => {
 		const listener = (_: any, key: { name?: string; ctrl?: boolean }) => {
 			if (key.name === "up" && selectedIndex > 0) {
@@ -46,7 +42,6 @@ export const getUserChoice = async <T>(
 				render();
 			} else if (key.name === "return") {
 				stdout.write("\x1b[?25h");
-				stdin.setRawMode(isRaw);
 				resolve(choices[selectedIndex]!.value);
 				stdin.removeListener("keypress", listener);
 			}
