@@ -11,7 +11,7 @@ import {
 	type Page,
 } from "playwright";
 
-const removeElement = (element: Locator, timeout = 10_000) =>
+const removeElement = (element: Locator, timeout?: number) =>
 	element.evaluate(el => el.remove(), null, { timeout });
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();
