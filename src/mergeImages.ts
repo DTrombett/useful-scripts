@@ -53,6 +53,10 @@ while (
 	images.push({ ...parsed.streams[0]!, ...parse(imagePath), path: imagePath });
 }
 stdout.write("\x1b[A\x1b[K");
+if (!images.length) {
+	stderr.write("\x1b[31mNo images provided!\x1b[0m\n");
+	exit(1);
+}
 // Prompt the user for the merge direction
 const direction = await getUserChoice("Merge direction", [
 	{
