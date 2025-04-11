@@ -2,13 +2,12 @@
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { join, parse, type ParsedPath } from "node:path";
-import { stderr, stdin, stdout } from "node:process";
-import { createInterface } from "node:readline/promises";
+import { exit, stderr, stdout } from "node:process";
 import { promisify } from "node:util";
+import { ask } from "./utils/ask.ts";
 import { getUserChoice } from "./utils/getUserChoice.ts";
 
 // Initialize the readline interface
-const rl = createInterface(stdin, stdout);
 const images: ({ width: number; height: number; path: string } & ParsedPath)[] =
 	[];
 const exec = promisify(execFile);
@@ -19,7 +18,7 @@ let imagePath: string;
 // Keep asking for image paths until user enters nothing
 while (
 	(imagePath = (
-		await rl.question(
+		await ask(
 			`Enter path to image (ex. C:\\Users\\acer\\Downloads\\image.png, example.png): `
 		)
 	).trim())
@@ -80,8 +79,7 @@ const defaultPath = join(
 	`${images.map(({ name }) => name).join("+")}.png`
 );
 const path =
-	(await rl.question(`Output file name or path (${defaultPath}): `)) ||
-	defaultPath;
+	(await ask(`Output file name or path (${defaultPath}): `)) || defaultPath;
 const ffmpegArgs = [
 	"-v",
 	"error",
@@ -97,7 +95,7 @@ const ffmpegArgs = [
 ];
 // Run ffmpeg
 stdout.write(`Merging images...\n`);
-const result = await ffmpeg(ffmpegArgs, { timeout: 10_000, encoding: "utf-8" });
+const result = await ffmpeg(ffmpegArgs, { encoding: "utf-8" });
 if (result.stderr) stderr.write(result.stderr);
 else stdout.write(`\x1b[32mMerged images to ${path}\x1b[0m\n`);
-rl.close();
+exit();
