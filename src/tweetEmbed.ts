@@ -14,7 +14,7 @@ import {
 const removeElement = (element: Locator, timeout?: number) =>
 	element.evaluate(el => el.remove(), null, { timeout });
 // Launch the browser in background
-let browser: Awaitable<Browser> = chromium.launch();
+let browser: Awaitable<Browser> = chromium.launch({ channel: "chrome" });
 // Create the browser page
 let page: Awaitable<Page> = browser.then(b =>
 	b.newPage({
@@ -58,8 +58,6 @@ page.setDefaultTimeout(10_000);
 
 	while (true) await removeElement(element, 0);
 })().catch(() => {});
-// Hang the video request to avoid the codec error
-page.route(/\.mp4(\?.*)?$/, () => new Promise(() => {}));
 // Open the page with the tweet embed
 let res: Promise<any> = page.goto(`Tweet.html?${search}`);
 // Ask the user if the useless elements should be removed
