@@ -6,6 +6,7 @@ const file = argv[2];
 
 mkdir(".cache", { recursive: true }).catch(() => {});
 process.argv.splice(0, 3);
+stdin.setRawMode(true);
 emitKeypressEvents(stdin);
 stdin.on("keypress", (_, key: { name?: string; ctrl?: boolean }) => {
 	if (key.ctrl && key.name === "c") {
