@@ -85,10 +85,8 @@ const ffmpegArgs = [
 	"error",
 	...images.flatMap(({ path }) => ["-i", path]),
 	"-filter_complex",
-	`${images
-		.map(({}, i) => `[${i}:v]scale=${scale}[${String.fromCharCode(97 + i)}];`)
-		.join(" ")} ${images
-		.map(({}, i) => `[${String.fromCharCode(97 + i)}]`)
+	`${images.map(({}, i) => `[${i}:v]scale=${scale}[${i}];`).join(" ")} ${images
+		.map(({}, i) => `[${i}]`)
 		.join("")}${direction}stack=inputs=${images.length}`,
 	"-y",
 	path,
