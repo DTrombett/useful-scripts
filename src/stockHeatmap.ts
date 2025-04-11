@@ -64,9 +64,7 @@ const res = page
 		waitUntil: "domcontentloaded",
 	})
 	.then(() =>
-		page
-			.locator(".apply-common-tooltip[data-name='heatmap-top-bar_fullscreen']")
-			.click()
+		page.locator("[data-qa-id='heatmap-top-bar_fullscreen']").click()
 	);
 // Initialize the readline interface
 const rl = createInterface(stdin, stdout);
