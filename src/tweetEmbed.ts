@@ -1,14 +1,35 @@
 // Create a screenshot of a tweet from its embed, using Playwright
-import { homedir } from "node:os";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { cpus, homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { exit, stderr, stdout } from "node:process";
+import { exit, stderr, stdin, stdout } from "node:process";
 import { chromium, devices, type Browser, type Page } from "playwright";
 import { ask } from "./utils/ask.ts";
 import { removeElement } from "./utils/removeElement.ts";
 import { watchElement } from "./utils/watchElement.ts";
 
+type VideoInfo = {
+	duration_millis: number;
+	variants: {
+		bitrate?: number;
+		content_type: string;
+		url: string;
+	}[];
+};
+type Tweet = {
+	id_str: string;
+	created_at: string;
+	quoted_tweet?: Tweet;
+	parent?: Tweet;
+	mediaDetails?: {
+		type: string;
+		video_info?: VideoInfo;
+	}[];
+};
+
 // Launch the browser in background
-let browser: Awaitable<Browser> = chromium.launch({ channel: "chrome" });
+let browser: Awaitable<Browser> = chromium.launch({ channel: "chromium" });
 // Create the browser page
 let page: Awaitable<Page> = browser.then(b =>
 	b.newPage({
@@ -34,17 +55,35 @@ if (!tweetId) {
 const search = new URLSearchParams({
 	dnt: "true",
 	id: tweetId,
-	lang: (await ask("Language (en): "))!,
+	lang: (await ask("Language (en): ")) || "en",
 	theme: (await ask("Theme (dark): ")) || "dark",
-	hideThread: (await ask("Hide thread (false): "))!,
+	hideThread: (await ask("Hide thread (false): ")) || "false",
 });
 // Wait for the browser and page to be created
 [browser, page] = await Promise.all([browser, page]);
 page.setDefaultTimeout(10_000);
-// Eventually remove the "Watch on X" buttons
-watchElement(page.getByRole("link", { name: "Watch on X", exact: true }));
 // Open the page with the tweet embed
 let res: Promise<any> = page.goto(`Tweet.html?${search}`);
+// Eventually remove the "Watch on X" buttons
+watchElement(page.getByRole("link", { name: "Watch on X", exact: true }));
+// Get tweet details
+let tweetResult: Awaitable<Tweet> = page
+	.waitForRequest(/https:\/\/cdn\.syndication\.twimg\.com\/tweet-result/)
+	.then(req => req.response())
+	.then(res => res?.json());
+let video: Awaitable<VideoInfo | undefined> = tweetResult.then(
+	tweet =>
+		tweet.mediaDetails?.find(
+			(
+				m
+			): m is {
+				type: "video";
+				video_info: NonNullable<VideoInfo>;
+			} => m.type === "video" && m.video_info != null
+		)?.video_info
+);
+// Ask the user if the video should be included
+const includeVideo = (await ask("Include video (Y/n): ")).toLowerCase() !== "n";
 // Ask the user if the useless elements should be removed
 if ((await ask("Remove useless elements (Y/n): ")).toLowerCase() !== "n")
 	res = Promise.all([
@@ -58,37 +97,107 @@ if ((await ask("Remove useless elements (Y/n): ")).toLowerCase() !== "n")
 				.nth(-2)
 		),
 	]);
+// Determine the file extension based on the video presence
+let ext = "png";
+let videoUrl: string | undefined;
+if (includeVideo) {
+	stdout.write(`\x1b[33mLoading tweet info...\x1b[0m\n`);
+	video = await video;
+	if (video) {
+		const [variant] = video.variants.sort(
+			(a, b) => (b.bitrate || 0) - (a.bitrate || 0)
+		);
+		if (variant) {
+			ext = variant.content_type.split("/")[1] ?? "mp4";
+			videoUrl = variant.url;
+			stdout.write(`\x1b[33mFound video: ${videoUrl}\x1b[0m\n`);
+		}
+	}
+}
 // Prompt the user for the path
 // Save to the downloads folder by default
-const defaultPath = join(homedir(), "Downloads", `${tweetId}.png`);
-const path =
+const defaultPath = join(homedir(), "Downloads", `${tweetId}.${ext}`);
+let path =
 	(await ask(`Output file name or path (${defaultPath}): `)) || defaultPath;
 // Wait for the page to finish loading
 stdout.write(`\x1b[33mLoading ${page.url()}...\x1b[0m\n`);
+stdin.resume();
 await res;
-// Save the screenshot
-stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
-await page
-	.getByRole("article")
-	.first()
-	// Force png format to increase quality and add transparency
-	.screenshot({
+if (videoUrl) {
+	// Take the screenshot
+	const screenshot = page.getByRole("article").first().screenshot({
 		omitBackground: true,
-		path: path.replace(/(\.[^.]*)?$/, ".png"),
 		style:
-			"a[aria-label='X Ads info and privacy'] { visibility: hidden; } [data-testid='videoComponent'] { display: none; }",
+			"a[aria-label='X Ads info and privacy'] { visibility: hidden; } [data-testid='videoComponent'] { visibility: hidden; }",
 	});
-// console.log(
-// 	Object.fromEntries(
-// 		Object.entries(
-// 			(await page.getByTestId("videoComponent").boundingBox()) ?? {}
-// 		).map(([k, v]) => [k, v * 8])
-// 	)
-// );
-// ffmpeg -i 1910308410941178294.png -i 1910308410941178294.mp4 -filter_complex "[1:v]scale=w=4118.400192260742:h=4118.400146484375:force_original_aspect_ratio=decrease,pad=4118.400192260742:4118.400146484375:(ow-iw)/2:(oh-ih)/2:color=0x00000000[vid]; [0:v][vid]overlay=140.8000030517578:1068.800048828125" -c:a copy output.mp4
-// Log the success message
-stdout.write(`\x1b[32mScreenshot saved to ${resolve(path)}\x1b[0m\n`);
-// Exit gracefully
-await page.close();
-await browser.close();
+	// Get the bounding box of the video element
+	const boundingBox = await page
+		.getByTestId("videoComponent")
+		.first()
+		.boundingBox();
+	if (!boundingBox) {
+		stderr.write("\x1b[31mFailed to get video element!\x1b[0m\n");
+		exit(1);
+	}
+	// Run ffmpeg to overlay the video on the screenshot
+	const args = [
+		"-v",
+		"error",
+		"-stats",
+		"-i",
+		"pipe:",
+		"-i",
+		videoUrl,
+		"-filter_complex",
+		`[1:v]scale=w=${boundingBox.width * 8}:h=${
+			boundingBox.height * 8
+		}:force_original_aspect_ratio=decrease,pad=${boundingBox.width * 8}:${
+			boundingBox.height * 8
+		}:(ow-iw)/2:(oh-ih)/2:color=0x00000000[a]; [0:v][a]overlay=${
+			boundingBox.x * 8
+		}:${boundingBox.y * 8}`,
+		"-c:a",
+		"copy",
+		"-threads",
+		cpus().length.toString(),
+		"-preset",
+		"ultrafast",
+		"-y",
+		path,
+	];
+	const child = spawn("ffmpeg", args, {
+		stdio: ["overlapped", "ignore", "inherit"],
+	});
+	stdout.write(
+		`\x1b[33mSaving video...\x1b[0m\nffmpeg ${args.join(" ")}\n\x1b[?25l`
+	);
+	child.stdin.write(await screenshot);
+	child.stdin.end();
+	await Promise.all([
+		once(child, "close"),
+		page.close().then(browser.close.bind(browser, undefined)),
+	]);
+	stdout.write("\x1b[?25h");
+	if (child.exitCode === 0)
+		stdout.write(`\x1b[32mVideo saved to ${resolve(path)}\x1b[0m\n`);
+	else process.exitCode = child.exitCode ?? 1;
+} else {
+	// Save the screenshot
+	stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
+	path = path.replace(/(\.[^.]*)?$/, ".png");
+	await page
+		.getByRole("article")
+		.first()
+		// Force png format to increase quality and add transparency
+		.screenshot({
+			omitBackground: true,
+			path,
+			style: `a[aria-label='X Ads info and privacy'] { visibility: hidden; }`,
+		});
+	// Log the success message
+	stdout.write(`\x1b[32mScreenshot saved to ${resolve(path)}\x1b[0m\n`);
+	// Exit gracefully
+	await page.close();
+	await browser.close();
+}
 exit();
