@@ -7,6 +7,7 @@ import { exit, stderr, stdin, stdout } from "node:process";
 import { chromium, devices, type Browser, type Page } from "playwright";
 import { ask } from "./utils/ask.ts";
 import { removeElement } from "./utils/removeElement.ts";
+import { parseHumanReadableSize } from "./utils/sizes.ts";
 import { watchElement } from "./utils/watchElement.ts";
 
 type VideoInfo = {
@@ -17,17 +18,23 @@ type VideoInfo = {
 		url: string;
 	}[];
 };
+type Media = {
+	type: string;
+	video_info?: VideoInfo;
+	original_info: {
+		height: number;
+		width: number;
+	};
+};
 type Tweet = {
 	id_str: string;
 	created_at: string;
 	quoted_tweet?: Tweet;
 	parent?: Tweet;
-	mediaDetails?: {
-		type: string;
-		video_info?: VideoInfo;
-	}[];
+	mediaDetails?: Media[];
 };
 
+const deviceScaleFactor = 8;
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch({ channel: "chromium" });
 // Create the browser page
@@ -36,9 +43,7 @@ let page: Awaitable<Page> = browser.then(b =>
 		baseURL: "https://platform.twitter.com/embed/",
 		...devices["Desktop Chrome HiDPI"],
 		// Use a high resolution for the screenshot
-		deviceScaleFactor: 8,
-		viewport: { width: 7680, height: 4320 },
-		screen: { width: 7680, height: 4320 },
+		deviceScaleFactor,
 	})
 );
 // Prompt the user for the tweet ID or URL
@@ -74,12 +79,8 @@ let tweetResult: Awaitable<Tweet> = page
 let video: Awaitable<VideoInfo | undefined> = tweetResult.then(
 	tweet =>
 		tweet.mediaDetails?.find(
-			(
-				m
-			): m is {
-				type: "video";
-				video_info: NonNullable<VideoInfo>;
-			} => m.type === "video" && m.video_info != null
+			(m): m is Media & { video_info: NonNullable<VideoInfo> } =>
+				m.type === "video" && m.video_info != null
 		)?.video_info
 );
 // Ask the user if the video should be included
@@ -110,7 +111,11 @@ if (includeVideo) {
 		if (variant) {
 			ext = variant.content_type.split("/")[1] ?? "mp4";
 			videoUrl = variant.url;
-			stdout.write(`\x1b[33mFound video: ${videoUrl}\x1b[0m\n`);
+			stdout.write(
+				`\x1b[33mFound video long ${Math.round(
+					video.duration_millis / 1000
+				)}s: ${videoUrl}\x1b[0m\n`
+			);
 		}
 	}
 }
@@ -131,15 +136,27 @@ if (videoUrl) {
 			"a[aria-label='X Ads info and privacy'] { visibility: hidden; } [data-testid='videoComponent'] { visibility: hidden; }",
 	});
 	// Get the bounding box of the video element
-	const boundingBox = await page
-		.getByTestId("videoComponent")
-		.first()
-		.boundingBox();
+	let boundingBox: Awaitable<{
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	} | null> = page.getByTestId("videoComponent").first().boundingBox();
+	// Ask the user if the video size should be limited to a specific size
+	const size =
+		parseHumanReadableSize(
+			(await ask("Optional max video size (ex. 10MB, 1GB, 800KB): ")) || "0"
+		) * 8000 || 0;
+	boundingBox = await boundingBox;
 	if (!boundingBox) {
 		stderr.write("\x1b[31mFailed to get video element!\x1b[0m\n");
 		exit(1);
 	}
 	// Run ffmpeg to overlay the video on the screenshot
+	const width = Math.round((boundingBox.width + 1.6) * deviceScaleFactor);
+	const height = Math.round((boundingBox.height + 1.6) * deviceScaleFactor);
+	const x = Math.round((boundingBox.x - 0.8) * deviceScaleFactor);
+	const y = Math.round((boundingBox.y - 0.8) * deviceScaleFactor);
 	const args = [
 		"-v",
 		"error",
@@ -149,13 +166,9 @@ if (videoUrl) {
 		"-i",
 		videoUrl,
 		"-filter_complex",
-		`[1:v]scale=w=${boundingBox.width * 8}:h=${
-			boundingBox.height * 8
-		}:force_original_aspect_ratio=decrease,pad=${boundingBox.width * 8}:${
-			boundingBox.height * 8
-		}:(ow-iw)/2:(oh-ih)/2:color=0x00000000[a]; [0:v][a]overlay=${
-			boundingBox.x * 8
-		}:${boundingBox.y * 8}`,
+		`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
+		"-b:v",
+		Math.round(size / (video as VideoInfo).duration_millis).toString(),
 		"-c:a",
 		"copy",
 		"-threads",
