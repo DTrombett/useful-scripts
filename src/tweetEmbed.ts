@@ -147,6 +147,7 @@ if (videoUrl) {
 		parseHumanReadableSize(
 			(await ask("Optional max video size (ex. 10MB, 1GB, 800KB): ")) || "0"
 		) * 8000 || 0;
+	stdin.resume();
 	boundingBox = await boundingBox;
 	if (!boundingBox) {
 		stderr.write("\x1b[31mFailed to get video element!\x1b[0m\n");
@@ -157,7 +158,8 @@ if (videoUrl) {
 	const height = Math.round((boundingBox.height + 1.6) * deviceScaleFactor);
 	const x = Math.round((boundingBox.x - 0.8) * deviceScaleFactor);
 	const y = Math.round((boundingBox.y - 0.8) * deviceScaleFactor);
-	const args = [
+	const br = Math.round(size / (video as VideoInfo).duration_millis);
+	const args: string[] = [
 		"-v",
 		"error",
 		"-stats",
@@ -167,8 +169,9 @@ if (videoUrl) {
 		videoUrl,
 		"-filter_complex",
 		`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
-		"-b:v",
-		Math.round(size / (video as VideoInfo).duration_millis).toString(),
+		...(br
+			? ["-maxrate", br.toString(), "-bufsize", Math.round(br / 2).toString()]
+			: ["-fps_mode", "passthrough", "-crf", "18"]),
 		"-c:a",
 		"copy",
 		"-threads",
