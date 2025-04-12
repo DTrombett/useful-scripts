@@ -34,7 +34,11 @@ type Tweet = {
 	mediaDetails?: Media[];
 };
 
-const deviceScaleFactor = 8;
+// Ask for a device scale factor between 1 and 8
+const deviceScaleFactor = Math.max(
+	Math.min(Number(await ask("Image resolution (1-8, default 8): ")) || 8, 8),
+	1
+);
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch({ channel: "chromium" });
 // Create the browser page
