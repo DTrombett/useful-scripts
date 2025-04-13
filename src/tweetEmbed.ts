@@ -97,7 +97,7 @@ if ((await ask("Remove useless elements (Y/n): ")).toLowerCase() !== "n")
 		removeElement(
 			page
 				.locator("div", {
-					hasText: /^Read (\d+ repl(ies|y)|more on (X|Twitter))$/,
+					hasText: /^Read ([0-9.]*[A-Z]? repl(ies|y)|more on (X|Twitter))$/,
 				})
 				.nth(-2)
 		),
@@ -176,7 +176,12 @@ if (videoUrl) {
 		"-filter_complex",
 		`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
 		...(br
-			? ["-maxrate", br.toString(), "-bufsize", Math.floor(br / 2).toString()]
+			? [
+					"-maxrate",
+					br.toString(),
+					"-bufsize",
+					Math.min(1e6, Math.floor(br / 2)).toString(),
+			  ]
 			: ["-fps_mode", "passthrough", "-crf", "18"]),
 		"-preset",
 		"ultrafast",
