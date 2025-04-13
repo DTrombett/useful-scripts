@@ -162,7 +162,9 @@ if (videoUrl) {
 	const height = Math.round((boundingBox.height + 0.8) * deviceScaleFactor);
 	const x = Math.round((boundingBox.x - 0.4) * deviceScaleFactor);
 	const y = Math.round((boundingBox.y - 0.4) * deviceScaleFactor);
-	const br = Math.floor(size / (video as VideoInfo).duration_millis);
+	const br =
+		(video as VideoInfo).duration_millis &&
+		Math.floor(size / (video as VideoInfo).duration_millis);
 	const args: string[] = [
 		"-v",
 		"error",
