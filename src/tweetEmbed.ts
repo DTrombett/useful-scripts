@@ -113,7 +113,7 @@ if (includeVideo) {
 			(a, b) => (b.bitrate || 0) - (a.bitrate || 0)
 		);
 		if (variant) {
-			ext = variant.content_type.split("/")[1] ?? "mp4";
+			ext = "mp4";
 			videoUrl = variant.url;
 			stdout.write(
 				`\x1b[33mFound video long ${Math.round(
@@ -167,6 +167,8 @@ if (videoUrl) {
 		"-v",
 		"error",
 		"-stats",
+		"-threads",
+		cpus().length.toString(),
 		"-i",
 		"pipe:",
 		"-i",
@@ -176,12 +178,10 @@ if (videoUrl) {
 		...(br
 			? ["-maxrate", br.toString(), "-bufsize", Math.floor(br / 2).toString()]
 			: ["-fps_mode", "passthrough", "-crf", "18"]),
-		"-c:a",
-		"copy",
-		"-threads",
-		cpus().length.toString(),
 		"-preset",
 		"ultrafast",
+		"-c:a",
+		"copy",
 		"-y",
 		path,
 	];
