@@ -36,7 +36,7 @@ type Tweet = {
 
 // Ask for a device scale factor between 1 and 8
 const deviceScaleFactor = Math.max(
-	Math.min(Number(await ask("Image resolution (1-8, default 8): ")) || 8, 8),
+	Math.min(Number(await ask("Image resolution (1-8, default 4): ")) || 4, 8),
 	1
 );
 // Launch the browser in background
@@ -158,11 +158,11 @@ if (videoUrl) {
 		exit(1);
 	}
 	// Run ffmpeg to overlay the video on the screenshot
-	const width = Math.round((boundingBox.width + 1.6) * deviceScaleFactor);
-	const height = Math.round((boundingBox.height + 1.6) * deviceScaleFactor);
-	const x = Math.round((boundingBox.x - 0.8) * deviceScaleFactor);
-	const y = Math.round((boundingBox.y - 0.8) * deviceScaleFactor);
-	const br = Math.round(size / (video as VideoInfo).duration_millis);
+	const width = Math.round((boundingBox.width + 0.8) * deviceScaleFactor);
+	const height = Math.round((boundingBox.height + 0.8) * deviceScaleFactor);
+	const x = Math.round((boundingBox.x - 0.4) * deviceScaleFactor);
+	const y = Math.round((boundingBox.y - 0.4) * deviceScaleFactor);
+	const br = Math.floor(size / (video as VideoInfo).duration_millis);
 	const args: string[] = [
 		"-v",
 		"error",
@@ -174,7 +174,7 @@ if (videoUrl) {
 		"-filter_complex",
 		`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
 		...(br
-			? ["-maxrate", br.toString(), "-bufsize", Math.round(br / 2).toString()]
+			? ["-maxrate", br.toString(), "-bufsize", Math.floor(br / 2).toString()]
 			: ["-fps_mode", "passthrough", "-crf", "18"]),
 		"-c:a",
 		"copy",
