@@ -7,6 +7,7 @@ import { join, resolve } from "node:path";
 import { exit, stdin, stdout } from "node:process";
 import { chromium, devices } from "playwright";
 import { ask } from "./utils/ask.ts";
+import { getUserChoice } from "./utils/getUserChoice.ts";
 import { removeElement } from "./utils/removeElement.ts";
 import { parseHumanReadableSize } from "./utils/sizes.ts";
 import { watchElement } from "./utils/watchElement.ts";
@@ -180,7 +181,44 @@ if (includeVideo) {
 				  ]
 				: ["-fps_mode", "passthrough", "-crf", "18"]),
 			"-preset",
-			"ultrafast",
+			await getUserChoice("ffmpeg preset", [
+				{
+					label: "Ultra fast",
+					value: "ultrafast",
+				},
+				{
+					label: "Super fast",
+					value: "superfast",
+				},
+				{
+					label: "Very fast",
+					value: "veryfast",
+				},
+				{
+					label: "Faster",
+					value: "faster",
+				},
+				{
+					label: "Fast",
+					value: "fast",
+				},
+				{
+					label: "Medium",
+					value: "medium",
+				},
+				{
+					label: "Slow",
+					value: "slow",
+				},
+				{
+					label: "Slower",
+					value: "slower",
+				},
+				{
+					label: "Very slow",
+					value: "veryslow",
+				},
+			]),
 			"-c:a",
 			"copy",
 			"-y",
