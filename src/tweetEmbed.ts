@@ -133,11 +133,17 @@ if (includeVideo) {
 				(await ask("Optional max video size (ex. 10MB, 1GB, 800KB): ")) || "0"
 			) * 8000;
 		stdin.resume();
-		// TODO: Choose a different video format if the user wants a smaller size
-		const [variant] = video.variants.sort(
-			(a, b) => (b.bitrate || 0) - (a.bitrate || 0)
-		);
-		ok(variant);
+		const br =
+			((video as VideoInfo).duration_millis &&
+				Math.floor(size / (video as VideoInfo).duration_millis)) ||
+			null;
+		video.variants.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+		const videoURL = (
+			(br &&
+				(video.variants.find(({ bitrate }) => bitrate && bitrate <= br) ??
+					video.variants.findLast(({ bitrate }) => bitrate))) ||
+			video.variants[0]!
+		).url;
 		// Take the screenshot
 		const screenshot = page.getByRole("article").first().screenshot({
 			omitBackground: true,
@@ -155,9 +161,6 @@ if (includeVideo) {
 		const height = Math.round((boundingBox.height + 0.8) * deviceScaleFactor);
 		const x = Math.round((boundingBox.x - 0.4) * deviceScaleFactor);
 		const y = Math.round((boundingBox.y - 0.4) * deviceScaleFactor);
-		const br =
-			(video as VideoInfo).duration_millis &&
-			Math.floor(size / (video as VideoInfo).duration_millis);
 		const args: string[] = [
 			"-v",
 			"error",
@@ -167,7 +170,7 @@ if (includeVideo) {
 			"-i",
 			"pipe:",
 			"-i",
-			variant.url,
+			videoURL,
 			"-filter_complex",
 			`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
 			...(br
