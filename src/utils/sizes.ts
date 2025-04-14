@@ -1,3 +1,5 @@
+import { ok } from "node:assert";
+
 const baseSizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 const searchSizes = ["BYTES", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 const bytesRegex = /^(\d*(?:\.\d+)?)\s*([a-zA-Z]+)?$/u;
@@ -37,11 +39,12 @@ export const parseHumanReadableSize = (
 ): number => {
 	const match = bytesRegex.exec(sizeStr);
 
-	if (!match) throw new Error("Invalid size format");
+	ok(match, "Invalid size format");
 	const [, value, unit] = match;
-	const numericValue = parseFloat(value!);
+	ok(value);
+	const numericValue = parseFloat(value);
 	const index = sizes.indexOf(unit?.toUpperCase() || "BYTES");
 
-	if (index === -1) throw new Error(`Unknown unit: ${unit}`);
+	ok(index !== -1, `Invalid size unit: ${unit}`);
 	return numericValue * k ** index;
 };
