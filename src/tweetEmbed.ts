@@ -7,7 +7,6 @@ import { join, resolve } from "node:path";
 import { exit, stdin, stdout } from "node:process";
 import { chromium, devices } from "playwright";
 import { ask } from "./utils/ask.ts";
-import { getUserChoice } from "./utils/getUserChoice.ts";
 import { removeElement } from "./utils/removeElement.ts";
 import { parseHumanReadableSize } from "./utils/sizes.ts";
 import { watchElement } from "./utils/watchElement.ts";
@@ -133,7 +132,6 @@ if (includeVideo) {
 			parseHumanReadableSize(
 				(await ask("Optional max video size (ex. 10MB, 1GB, 800KB): ")) || "0"
 			) * 8000;
-		stdin.resume();
 		const br =
 			((video as VideoInfo).duration_millis &&
 				Math.floor(size / (video as VideoInfo).duration_millis)) ||
@@ -172,6 +170,8 @@ if (includeVideo) {
 			videoURL,
 			"-filter_complex",
 			`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
+			"-c:v",
+			(await ask("Video codec (libx264): ")) || "libx264",
 			...(br
 				? [
 						"-maxrate",
@@ -179,51 +179,20 @@ if (includeVideo) {
 						"-bufsize",
 						Math.min(1e6, Math.floor(br / 2)).toString(),
 				  ]
-				: ["-fps_mode", "passthrough", "-crf", "18"]),
+				: [
+						"-fps_mode",
+						"passthrough",
+						"-crf",
+						(await ask("CRF (18): ")) || "18",
+				  ]),
 			"-preset",
-			await getUserChoice("ffmpeg preset", [
-				{
-					label: "Ultra fast",
-					value: "ultrafast",
-				},
-				{
-					label: "Super fast",
-					value: "superfast",
-				},
-				{
-					label: "Very fast",
-					value: "veryfast",
-				},
-				{
-					label: "Faster",
-					value: "faster",
-				},
-				{
-					label: "Fast",
-					value: "fast",
-				},
-				{
-					label: "Medium",
-					value: "medium",
-				},
-				{
-					label: "Slow",
-					value: "slow",
-				},
-				{
-					label: "Slower",
-					value: "slower",
-				},
-				{
-					label: "Very slow",
-					value: "veryslow",
-				},
-			]),
+			(await ask("ffmpeg preset (ultrafast): ")) || "ultrafast",
 			"-c:a",
 			"copy",
 			"-y",
 			path,
 		];
+		stdin.resume();
 		const child = spawn("ffmpeg", args, {
 			stdio: ["overlapped", "ignore", "inherit"],
 		});
