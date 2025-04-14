@@ -2,7 +2,7 @@
 import { ok } from "node:assert";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { cpus, homedir } from "node:os";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { exit, stdin, stdout } from "node:process";
 import { chromium, devices } from "playwright";
@@ -165,8 +165,6 @@ if (includeVideo) {
 			"-v",
 			"error",
 			"-stats",
-			"-threads",
-			cpus().length.toString(),
 			"-i",
 			"pipe:",
 			"-i",
