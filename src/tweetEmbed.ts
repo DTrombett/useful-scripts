@@ -185,6 +185,8 @@ if (includeVideo) {
 						"-crf",
 						(await ask("CRF (18): ")) || "18",
 				  ]),
+			"-g",
+			(await ask("Keyframe interval (250): ")) || "250",
 			"-preset",
 			(await ask("ffmpeg preset (ultrafast): ")) || "ultrafast",
 			"-c:a",
