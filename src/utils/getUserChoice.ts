@@ -8,7 +8,7 @@ import { stdin, stdout } from "process";
  */
 export const getUserChoice = async <T>(
 	question: string,
-	choices: { label: string; value: T; default?: boolean }[]
+	choices: { label: string; value: T; default?: boolean; fn?: () => void }[]
 ) => {
 	// Find default index or use first option
 	let selectedIndex = Math.max(
@@ -32,6 +32,7 @@ export const getUserChoice = async <T>(
 	stdout.write(`\x1b[?25l\x1b[1m${question}\x1b[0m\n`);
 	// Display choices
 	render(false);
+	stdin.resume();
 	return new Promise<T>(resolve => {
 		const listener = (_: any, key: { name?: string; ctrl?: boolean }) => {
 			if (key.name === "up" && selectedIndex > 0) {
@@ -42,6 +43,7 @@ export const getUserChoice = async <T>(
 				render();
 			} else if (key.name === "return") {
 				stdout.write("\x1b[?25h");
+				choices[selectedIndex]!.fn?.();
 				resolve(choices[selectedIndex]!.value);
 				stdin.removeListener("keypress", listener);
 			}

@@ -2,11 +2,13 @@
 import { ok } from "node:assert";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { homedir } from "node:os";
+import { cpus, homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { exit, stdin, stdout } from "node:process";
 import { chromium, devices } from "playwright";
 import { ask } from "./utils/ask.ts";
+import { getUserChoice } from "./utils/getUserChoice.ts";
+import { parseArgs } from "./utils/parseArgs.ts";
 import { removeElement } from "./utils/removeElement.ts";
 import { parseHumanReadableSize } from "./utils/sizes.ts";
 import { watchElement } from "./utils/watchElement.ts";
@@ -126,7 +128,7 @@ if (includeVideo) {
 				video.duration_millis / 1000
 			)}s\x1b[0m\n`
 		);
-		const path = await getOutputPath("mp4");
+		let path = await getOutputPath("mp4");
 		// Ask the user if the video size should be limited to a specific size
 		const size =
 			parseHumanReadableSize(
@@ -165,35 +167,96 @@ if (includeVideo) {
 			"error",
 			"-stats",
 			"-i",
-			"pipe:",
-			"-i",
 			videoURL,
+			"-i",
+			"pipe:",
 			"-filter_complex",
-			`[1:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [0:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
-			"-c:v",
-			(await ask("Video codec (libx264): ")) || "libx264",
-			...(br
-				? [
-						"-maxrate",
-						br.toString(),
-						"-bufsize",
-						Math.min(1e6, Math.floor(br / 2)).toString(),
-				  ]
-				: [
-						"-fps_mode",
-						"passthrough",
-						"-crf",
-						(await ask("CRF (18): ")) || "18",
-				  ]),
-			"-g",
-			(await ask("Keyframe interval (250): ")) || "250",
-			"-preset",
-			(await ask("ffmpeg preset (ultrafast): ")) || "ultrafast",
+			`[0:v]scale=${width}:${height}:force_original_aspect_ratio=decrease[a]; [1:v][a]overlay=(${width}-overlay_w)/2+${x}:(${height}-overlay_h)/2+${y}`,
 			"-c:a",
 			"copy",
+			"-map_metadata",
+			"0",
 			"-y",
-			path,
 		];
+		if (br)
+			args.push(
+				"-maxrate",
+				br.toString(),
+				"-bufsize",
+				Math.min(1e6, Math.floor(br / 2)).toString()
+			);
+		let additionalArgs = await getUserChoice("ffmpeg presets", [
+			{
+				label: "Fast",
+				value: ["-c:v", "libx264", "-preset", "ultrafast", "-g", "250"],
+				fn: br
+					? args.push.bind(
+							args,
+							"-fps_mode",
+							"passthrough",
+							"-crf",
+							"18",
+							"-pix_fmt",
+							"yuv444p10le"
+					  )
+					: undefined,
+			},
+			{
+				label: "Archive",
+				value: [
+					"-c:v",
+					"ffv1",
+					"-level",
+					"3",
+					"-coder",
+					"1",
+					"-context",
+					"1",
+					"-g",
+					"1",
+					"-threads",
+					cpus().length.toString(),
+					"-slices",
+					"4",
+					"-slicecrc",
+					"1",
+					"-fps_mode",
+					"passthrough",
+					"-pix_fmt",
+					br ? "yuv420p" : "yuv444p10le",
+				],
+				fn: () => (path = path.replace(/\.mp4$/, ".mkv")),
+			},
+			{
+				label: "Original",
+				value: ["-map", "0", "-map", "1"],
+				fn: () => {
+					// Remove the filter and put it in a metadata field
+					const filterIndex = args.indexOf("-filter_complex");
+					const filter = args[filterIndex + 1];
+
+					args.splice(filterIndex, 2);
+					args.push("-metadata", `filter=${filter}`);
+					// Copy all streams
+					args[args.indexOf("-c:a")] = "-c";
+					// Remove the size limit and warn the user
+					if (br) {
+						stdout.write(
+							"\x1b[33mWarning: Original will bypass size limit.\x1b[0m\n"
+						);
+						args.splice(args.indexOf("-maxrate"), 4);
+					}
+					// Use mkv as the output format
+					path = path.replace(/\.mp4$/, ".mkv");
+				},
+			},
+			{
+				label: "Custom",
+				value: null,
+			},
+		]);
+		additionalArgs ??= parseArgs(await ask("Custom ffmpeg args: "));
+		args.push(...additionalArgs, path);
 		stdin.resume();
 		const child = spawn("ffmpeg", args, {
 			stdio: ["overlapped", "ignore", "inherit"],
