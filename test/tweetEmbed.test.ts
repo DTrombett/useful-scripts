@@ -1,9 +1,9 @@
 import { strictEqual } from "node:assert";
+import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import { env, exit } from "node:process";
-import { finished } from "node:stream/promises";
+import { pipeline } from "node:stream/promises";
 import { after, suite, test } from "node:test";
 import tweetEmbed from "../src/tweetEmbed.ts";
 
@@ -14,13 +14,16 @@ suite("tweetEmbed", { concurrency: true }, async () => {
 		await rm(".cache/", { recursive: true, force: true });
 		exit();
 	});
-	const getHash = async (path: string) => {
+	const hashImage = async (path: string) => {
 		const hash = createHash("sha512");
-		const stream = createReadStream(path);
 
-		stream.pipe(hash);
-		await finished(stream);
-		return hash.digest("hex");
+		await pipeline(
+			spawn("ffmpeg", ["-v", "error", "-i", path, "-f", "rawvideo", "-"], {
+				stdio: ["ignore", "pipe", "inherit"],
+			}).stdout,
+			hash
+		);
+		return hash.digest("base64url");
 	};
 	test("Simple screenshot", { concurrency: true }, async () => {
 		const path = `.cache/${randomUUID()}.png`;
@@ -31,8 +34,8 @@ suite("tweetEmbed", { concurrency: true }, async () => {
 			silent: true,
 		});
 		strictEqual(
-			await getHash(path),
-			"6add474f16ab5a9fbec9ac54aa3031c32f9e417641e44a4f30b6f0ab1d9765dd018b237b5ac7f63172428678d7562c2bb299296489b670b6edd089be96c8157d"
+			await hashImage(path),
+			"peUXJI9QvcF5tiQ8DHU2pkrQSx5xnaiLLUSnSLuXO_S_dXpiaSqe4tE6tseU8BTU7m4piB8WCkG4T8Dd1_jS5Q"
 		);
 	});
 	test("High quality screenshot", { concurrency: true }, async () => {
@@ -45,8 +48,8 @@ suite("tweetEmbed", { concurrency: true }, async () => {
 			silent: true,
 		});
 		strictEqual(
-			await getHash(path),
-			"2ce5b9ec7ac45d7fce05e5a0f4926c78d138e2ce367da97f430c69be0c1f42705d4796ca1a24139492aa58dac89c1fe8b7fefdaf75fd5a9cb62a4e18be8c7fc5"
+			await hashImage(path),
+			"VMGAwS75f8AlGyp8dosM1jTR9HQtrXRe81NHZLLtcSaqooKriItJ907QFEpj5u5RJrwUzNRCfiKCKDikEclaxQ"
 		);
 	});
 });
