@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import { argv, stdin, stdout } from "node:process";
+import { argv, exit, stdin, stdout } from "node:process";
 import { emitKeypressEvents } from "node:readline";
 
 const file = argv[2];
@@ -14,4 +14,6 @@ stdin.on("keypress", (_, key: { name?: string; ctrl?: boolean }) => {
 		process.exit(0);
 	}
 });
-import(`./${file?.endsWith(".ts") ? file.slice(0, -3) : file}.ts`);
+const { default: fn } = await import(`./${file?.replace(/\.ts$/, "")}.ts`);
+await fn();
+exit();
