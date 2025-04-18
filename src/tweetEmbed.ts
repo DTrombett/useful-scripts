@@ -4,7 +4,8 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { cpus, homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { env, exit, stdin, stdout } from "node:process";
+import { env, stdin, stdout } from "node:process";
+import { Readable } from "node:stream";
 import { chromium, devices } from "playwright";
 import { ask, getUserChoice } from "./utils/options.ts";
 import { parseArgs } from "./utils/parseArgs.ts";
@@ -36,7 +37,7 @@ const tweetEmbed = async ({
 	size: number;
 	additionalArgs: string[] | null;
 	silent: boolean;
-}> = {}) => {
+}> = {}): Promise<void | Readable> => {
 	// Prompt the user for the tweet ID or URL
 	tweet = (tweet ?? (await ask("Tweet ID or URL: ", { silent }))).match(
 		/(?<=^|\/status\/)\d+/
@@ -48,7 +49,8 @@ const tweetEmbed = async ({
 	 * @returns The output path
 	 */
 	const getOutputPath = async (ext: string) => {
-		if (outputPath) return resolve(outputPath);
+		if (outputPath)
+			return outputPath === "-" ? outputPath : resolve(outputPath);
 		const defaultPath = join(homedir(), "Downloads", `${tweet}.${ext}`);
 
 		return resolve(
@@ -222,7 +224,9 @@ const tweetEmbed = async ({
 								"-crf",
 								"18",
 								"-pix_fmt",
-								"yuv444p10le"
+								"yuv444",
+								"-f",
+								"mp4"
 						  )
 						: undefined,
 				},
@@ -248,13 +252,15 @@ const tweetEmbed = async ({
 						"-fps_mode",
 						"passthrough",
 						"-pix_fmt",
-						br ? "yuv420p" : "yuv444p10le",
+						br ? "yuv420p" : "yuv444",
+						"-f",
+						"matroska",
 					],
 					fn: () => (path = path.replace(/\.mp4$/, ".mkv")),
 				},
 				{
 					label: "Original",
-					value: ["-map", "0", "-map", "1"],
+					value: ["-map", "0", "-map", "1", "-f", "matroska"],
 					fn: () => {
 						// Remove the filter and put it in a metadata field
 						const filterIndex = args.indexOf("-filter_complex");
@@ -287,39 +293,62 @@ const tweetEmbed = async ({
 			args.push(...additionalArgs, path);
 			stdin.resume();
 			const child = spawn("ffmpeg", args, {
-				stdio: ["overlapped", "ignore", "inherit"],
+				stdio: [
+					"overlapped",
+					path === "-" ? "overlapped" : "ignore",
+					"inherit",
+				],
 			});
-			!silent &&
-				stdout.write(
-					`\x1b[33mSaving video...\x1b[0m\nffmpeg ${args.join(" ")}\n\x1b[?25l`
-				);
-			child.stdin.write(await screenshot);
-			child.stdin.end();
-			await Promise.all([
-				once(child, "close"),
-				page.close().then(browser.close.bind(browser, undefined)),
-			]);
-			!silent && stdout.write("\x1b[?25h");
-			if (child.exitCode === 0)
-				!silent && stdout.write(`\x1b[32mVideo saved to ${path}\x1b[0m\n`);
-			else process.exitCode = child.exitCode ?? 1;
-			exit();
+			return new Promise((resolve, reject) => {
+				if (path === "-") resolve(child.stdout!);
+				screenshot
+					.then(b => {
+						child.stdin!.write(b);
+						child.stdin!.end();
+						return Promise.all([
+							once(child, "exit"),
+							page.close().then(browser.close.bind(browser, undefined)),
+						]);
+					})
+					.then(() => {
+						!silent && stdout.write("\x1b[?25h");
+						if (child.exitCode === 0)
+							!silent &&
+								stdout.write(`\x1b[32mVideo saved to ${path}\x1b[0m\n`);
+						else process.exitCode = child.exitCode ?? 1;
+						resolve();
+					})
+					.catch(reject);
+				!silent &&
+					stdout.write(
+						`\x1b[33mSaving video...\x1b[0m\nffmpeg ${args.join(
+							" "
+						)}\n\x1b[?25l`
+					);
+			});
 		}
 	}
-	const path = (await getOutputPath("png")).replace(/(\.[^.]*)?$/, ".png");
+	let path = await getOutputPath("png");
+	if (path !== "-") path = path.replace(/(\.[^.]*)?$/, ".png");
 	stdin.resume();
+	await page.waitForLoadState("networkidle");
 	// Save the screenshot
 	!silent && stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
-	await page.getByRole("article").first().screenshot({
-		omitBackground: true,
-		path,
-		style: "a[aria-label='X Ads info and privacy'] { visibility: hidden; }",
+	const buffer = await page
+		.getByRole("article")
+		.first()
+		.screenshot({
+			omitBackground: true,
+			path: path === "-" ? undefined : path,
+			style: "a[aria-label='X Ads info and privacy'] { visibility: hidden; }",
+		});
+	return new Promise(resolve => {
+		if (path === "-") resolve(Readable.from(buffer, { objectMode: false }));
+		// Log the success message
+		!silent && stdout.write(`\x1b[32mScreenshot saved to ${path}\x1b[0m\n`);
+		// Exit gracefully
+		resolve(page.close().then(browser.close.bind(browser, undefined)));
 	});
-	// Log the success message
-	!silent && stdout.write(`\x1b[32mScreenshot saved to ${path}\x1b[0m\n`);
-	// Exit gracefully
-	await page.close();
-	await browser.close();
 };
 
 export default tweetEmbed;

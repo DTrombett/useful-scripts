@@ -25,7 +25,7 @@
 		"url": "git+https://github.com/DTrombett/useful-scripts.git"
 	},
 	"scripts": {
-		"start": "node --experimental-strip-types --experimental-transform-types .",
-		"test": "tsc"
+		"start": "node --experimental-transform-types .",
+		"test": "tsc && node --test --experimental-transform-types --experimental-test-module-mocks"
 	}
 }
