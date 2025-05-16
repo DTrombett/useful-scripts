@@ -13,6 +13,9 @@ import { removeElement } from "./utils/removeElement.ts";
 import { parseHumanReadableSize } from "./utils/sizes.ts";
 import { watchElement } from "./utils/watchElement.ts";
 
+const style = "a[aria-label='X Ads info and privacy'] { visibility: hidden; }";
+const baseURL = "https://platform.twitter.com/embed/";
+
 const tweetEmbed = async ({
 	tweet,
 	outputPath,
@@ -95,7 +98,6 @@ const tweetEmbed = async ({
 				default: "Y",
 			})
 		).toLowerCase() !== "n";
-	const baseURL = "https://platform.twitter.com/embed/";
 	const url = `Tweet.html?${search}`;
 
 	// Launch the browser
@@ -139,6 +141,8 @@ const tweetEmbed = async ({
 	!silent &&
 		stdout.write(`\x1b[33mLoading ${new URL(url, baseURL).href}...\x1b[0m\n`);
 	await res;
+	// Find the tweet element
+	const article = page.locator("div:has(>article)").first();
 	if (includeVideo) {
 		tweetResult = await tweetResult;
 		const video = tweetResult.mediaDetails?.find(
@@ -173,11 +177,13 @@ const tweetEmbed = async ({
 				video.variants[0]!
 			).url;
 			// Take the screenshot
-			const screenshot = page.getByRole("article").first().screenshot({
-				omitBackground: true,
-				style:
-					"a[aria-label='X Ads info and privacy'] { visibility: hidden; } [data-testid='videoComponent'] { visibility: hidden; }",
-			});
+			const screenshot = page
+				.getByRole("article")
+				.first()
+				.screenshot({
+					omitBackground: true,
+					style: `${style} [data-testid='videoComponent'] { visibility: hidden; }`,
+				});
 			// Get the bounding box of the video element
 			const boundingBox = await page
 				.getByTestId("videoComponent")
@@ -334,14 +340,12 @@ const tweetEmbed = async ({
 	await page.waitForLoadState("networkidle");
 	// Save the screenshot
 	!silent && stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
-	const buffer = await page
-		.getByRole("article")
-		.first()
-		.screenshot({
-			omitBackground: true,
-			path: path === "-" ? undefined : path,
-			style: "a[aria-label='X Ads info and privacy'] { visibility: hidden; }",
-		});
+	const buffer = await article.screenshot({
+		omitBackground: true,
+		path: path === "-" ? undefined : path,
+		style,
+		timeout: 20_000,
+	});
 	return new Promise(resolve => {
 		if (path === "-") resolve(Readable.from(buffer, { objectMode: false }));
 		// Log the success message

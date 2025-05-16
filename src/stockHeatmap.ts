@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { chromium, type Browser, type Page } from "playwright";
-import { getUserChoice } from "./utils/getUserChoice.ts";
+import { getUserChoice } from "./utils/options.ts";
 
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();

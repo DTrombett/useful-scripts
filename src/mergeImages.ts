@@ -4,8 +4,7 @@ import { homedir } from "node:os";
 import { join, parse, type ParsedPath } from "node:path";
 import { exit, stderr, stdout } from "node:process";
 import { promisify } from "node:util";
-import { ask } from "./utils/ask.ts";
-import { getUserChoice } from "./utils/getUserChoice.ts";
+import { ask, getUserChoice } from "./utils/options.ts";
 
 // Initialize the readline interface
 const images: ({ width: number; height: number; path: string } & ParsedPath)[] =
