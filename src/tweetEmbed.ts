@@ -104,6 +104,7 @@ const tweetEmbed = async ({
 	!silent && stdout.write("\x1b[33mStarting...\x1b[0m\n");
 	const browser = await chromium.launch({
 		channel: includeVideo ? "chromium" : "chrome",
+		// headless: false,
 	});
 	// Create the browser page
 	const page = await browser.newPage({
@@ -125,6 +126,14 @@ const tweetEmbed = async ({
 			page.getByRole("link", { name: "Watch on X", exact: true }),
 			removeElement
 		);
+		watchElement(
+			page.getByRole("link", { name: "Follow", exact: true }),
+			removeElement
+		);
+		watchElement(
+			page.getByText(/^@\w+·$/).getByText("·", { exact: true }),
+			removeElement
+		);
 		res = Promise.all([
 			res,
 			removeElement(page.getByText(/^[0-9.]*[A-Z]?ReplyCopy link to post$/)),
@@ -143,6 +152,7 @@ const tweetEmbed = async ({
 	await res;
 	// Find the tweet element
 	const article = page.locator("div:has(>article)").first();
+	await page.pause();
 	if (includeVideo) {
 		tweetResult = await tweetResult;
 		const video = tweetResult.mediaDetails?.find(
