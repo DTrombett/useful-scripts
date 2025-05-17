@@ -1,12 +1,12 @@
-import { ok } from "node:assert";
+import { ok, rejects } from "node:assert";
 import { spawn } from "node:child_process";
 import { on } from "node:events";
 import { mkdir } from "node:fs/promises";
-import { env, stdin } from "node:process";
+import { env } from "node:process";
 import { suite, test } from "node:test";
 import tweetEmbed from "../src/tweetEmbed.ts";
 
-stdin.unref();
+process.stdin.unref();
 env.NODE_ENV = "test";
 mkdir(".cache", { recursive: true });
 suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
@@ -14,12 +14,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		options: NonNullable<Parameters<typeof tweetEmbed>[0]>,
 		filename: string
 	) => {
-		const readablePromise = tweetEmbed({
-			...options,
-			outputPath: "-",
-			silent: true,
-		});
-		const { stdin, stderr } = spawn(
+		const child = spawn(
 			"ffmpeg",
 			[
 				"-hide_banner",
@@ -35,12 +30,21 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			],
 			{ stdio: ["pipe", "ignore", "pipe"] }
 		);
+		const errorPromise = tweetEmbed({
+			...options,
+			outputPath: "-",
+			silent: true,
+		})
+			.then(async r => void r!.pipe(child.stdin))
+			.catch((error: Error) => {
+				child.stdin.destroy(error);
+				child.kill();
+				return error;
+			});
 		let message = "";
 
-		readablePromise.then(r => r!.pipe(stdin));
-		for await (let [data] of on(stderr, "data", {
+		for await (let [data] of on(child.stderr, "data", {
 			close: ["close", "error", "end"],
-			signal: AbortSignal.timeout(10_000),
 		})) {
 			data = data.toString();
 			message += data;
@@ -50,19 +54,20 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 
 			if (!Number.isNaN(ssim)) {
 				ok(ssim > 0.99, `SSIM < 0.99: ${ssim}`);
+				child.kill();
 				return;
 			}
 		}
-		throw new Error(`Failed to parse SSIM\n${message}`);
+		throw (await errorPromise) ?? new Error(`Failed to parse SSIM\n${message}`);
 	};
 
-	await test("Basic screenshot", { concurrency: true }, async () => {
+	await test("Basic screenshot", async () => {
 		await compareImages(
 			{ tweet: "https://x.com/Spotify/status/1909700761124028890" },
 			"1909700761124028890-default.png"
 		);
 	});
-	await test("High quality screenshot", { concurrency: true }, async () => {
+	await test("High quality screenshot", async () => {
 		await compareImages(
 			{
 				tweet: "https://x.com/Spotify/status/1909700761124028890",
@@ -71,16 +76,50 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			"1909700761124028890-hd.png"
 		);
 	});
-	await test("Quote tweet", { concurrency: true }, async () => {
+	await test("Quote tweet", async () => {
 		await compareImages(
 			{ tweet: "x.com/simonsarris/status/1912709411937669320" },
 			"1912709411937669320.png"
 		);
 	});
-	await test("Reply tweet", { concurrency: true }, async () => {
+	await test("Reply tweet", async () => {
 		await compareImages(
 			{ tweet: "twitter.com/wrongName/status/1913216122314236361" },
 			"1913216122314236361.png"
+		);
+	});
+	await test("With additional elements", async () => {
+		await compareImages(
+			{ tweet: "1909700761124028890", removeElements: false },
+			"1909700761124028890-elements.png"
+		);
+	});
+	await test("Different language", async () => {
+		await compareImages(
+			{ tweet: "1909700761124028890", removeElements: false, lang: "it" },
+			"1909700761124028890-it.png"
+		);
+	});
+	await test("Light theme", async () => {
+		await compareImages(
+			{ tweet: "1909700761124028890", theme: "light" },
+			"1909700761124028890-light.png"
+		);
+	});
+	await test("Hide thread", async () => {
+		await compareImages(
+			{ tweet: "1913216122314236361", hideThread: "true" },
+			"1913216122314236361-hideThread.png"
+		);
+	});
+	await test("Tweet not found", async () => {
+		await rejects(
+			tweetEmbed({
+				tweet: "1913216122314236360",
+				outputPath: "-",
+				silent: true,
+			}),
+			{ name: "Error", message: "Failed to get tweet details" }
 		);
 	});
 });
