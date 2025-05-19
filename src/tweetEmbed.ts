@@ -6,7 +6,13 @@ import { cpus, homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { env, stdin, stdout } from "node:process";
 import { Readable } from "node:stream";
-import { chromium, devices } from "playwright";
+import { devices } from "playwright";
+import {
+	closeBrowser,
+	closeContext,
+	launch,
+	newContext,
+} from "./utils/browser.ts";
 import { ask, getUserChoice } from "./utils/options.ts";
 import { parseArgs } from "./utils/parseArgs.ts";
 import { removeElement } from "./utils/removeElement.ts";
@@ -104,17 +110,18 @@ const tweetEmbed = async ({
 
 	// Launch the browser
 	!silent && stdout.write("\x1b[33mStarting...\x1b[0m\n");
-	const browser = await chromium.launch({
+	const browser = await launch("chromium", {
 		channel: includeVideo ? "chromium" : "chrome",
 		// headless: false,
 	});
+	// Create the browser page
+	const context = await newContext(browser, {
+		...devices["Desktop Chrome HiDPI"],
+		baseURL,
+		deviceScaleFactor,
+	});
+	const page = await context.newPage();
 	try {
-		// Create the browser page
-		const page = await browser.newPage({
-			...devices["Desktop Chrome HiDPI"],
-			baseURL,
-			deviceScaleFactor,
-		});
 		page.setDefaultTimeout(10_000);
 		// Open the page with the tweet embed
 		let res: Promise<any> = page.goto(url);
@@ -127,7 +134,11 @@ const tweetEmbed = async ({
 			.then(res => res?.json())
 			.catch(() => {});
 		if (!tweetResult) {
-			browser.close().catch(() => {});
+			Promise.all([
+				page.close(),
+				closeContext(context),
+				closeBrowser(browser),
+			]).catch(() => {});
 			if (silent) throw new Error("Failed to get tweet details");
 			stdout.write("\x1b[31mFailed to get tweet details!\x1b[0m\n");
 			return;
@@ -334,7 +345,9 @@ const tweetEmbed = async ({
 							child.stdin!.end();
 							return Promise.all([
 								once(child, "exit"),
-								page.close().then(browser.close.bind(browser, undefined)),
+								page.close(),
+								closeContext(context),
+								closeBrowser(browser),
 							]);
 						})
 						.then(() => {
@@ -372,10 +385,20 @@ const tweetEmbed = async ({
 			// Log the success message
 			!silent && stdout.write(`\x1b[32mScreenshot saved to ${path}\x1b[0m\n`);
 			// Exit gracefully
-			resolve(page.close().then(browser.close.bind(browser, undefined)));
+			resolve(
+				Promise.all([
+					page.close(),
+					closeContext(context),
+					closeBrowser(browser),
+				]).then(() => {})
+			);
 		});
 	} catch (err) {
-		browser.close().catch(() => {});
+		Promise.all([
+			page.close(),
+			closeContext(context),
+			closeBrowser(browser),
+		]).catch(() => {});
 		throw err;
 	}
 };
