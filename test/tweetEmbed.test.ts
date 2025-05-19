@@ -56,6 +56,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			});
 		let message = "";
 
+		failed.add(filename);
 		for await (let [data] of on(child.stderr, "data", {
 			close: ["close", "error", "end"],
 		})) {
@@ -86,6 +87,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 					: rm(`.cache/${filename}`, { force: true })
 			),
 			env.GITHUB_ACTIONS &&
+				failed.size &&
 				new DefaultArtifactClient().uploadArtifact(
 					"Tweet embed failed tests",
 					Array.from(failed).map(filename => resolve(`.cache/${filename}`)),
