@@ -11,7 +11,7 @@ import tweetEmbed from "../src/tweetEmbed.ts";
 
 process.stdin.unref();
 env.NODE_ENV = "test";
-mkdir(".cache", { recursive: true });
+mkdir("test/tmp", { recursive: true });
 suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 	const successful: string[] = [];
 	const failed = new Set<string>();
@@ -31,7 +31,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 				"1",
 				"-frames:v",
 				"1",
-				`.cache/${filename}`,
+				`test/tmp/${filename}`,
 				"-i",
 				`test/asset/${filename}`,
 				"-filter_complex",
@@ -69,7 +69,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			if (!Number.isNaN(ssim)) {
 				ok(
 					ssim >= 0.9,
-					`SSIM < 0.9: ${ssim} (${resolve(`.cache/${filename}`)})`
+					`SSIM < 0.9: ${ssim} (${resolve(`test/tmp/${filename}`)})`
 				);
 				failed.delete(filename);
 				successful.push(filename);
@@ -83,15 +83,15 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		await Promise.all([
 			...successful.map(async filename =>
 				argv.includes("--test-update-asset")
-					? rename(`.cache/${filename}`, `test/asset/${filename}`)
-					: rm(`.cache/${filename}`, { force: true })
+					? rename(`test/tmp/${filename}`, `test/asset/${filename}`)
+					: rm(`test/tmp/${filename}`, { force: true })
 			),
 			env.GITHUB_ACTIONS &&
 				failed.size &&
 				new DefaultArtifactClient().uploadArtifact(
 					"Tweet embed failed tests",
-					Array.from(failed).map(filename => resolve(`.cache/${filename}`)),
-					".cache"
+					Array.from(failed),
+					resolve("./test/tmp/")
 				),
 		]);
 	});
