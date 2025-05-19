@@ -88,7 +88,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			env.GITHUB_ACTIONS &&
 				new DefaultArtifactClient().uploadArtifact(
 					"Tweet embed failed tests",
-					Array.from(failed),
+					Array.from(failed).map(filename => resolve(`.cache/${filename}`)),
 					".cache"
 				),
 		]);
