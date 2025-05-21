@@ -15,7 +15,6 @@
 		"undici": "^7.9.0"
 	},
 	"devDependencies": {
-		"@actions/artifact": "^2.3.2",
 		"@tsconfig/node22": "^22.0.1",
 		"@tsconfig/recommended": "^1.0.8",
 		"@tsconfig/strictest": "^2.0.5",

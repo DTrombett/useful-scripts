@@ -1,4 +1,3 @@
-import { DefaultArtifactClient } from "@actions/artifact";
 import { ok, rejects } from "node:assert";
 import { spawn } from "node:child_process";
 import { on } from "node:events";
@@ -19,7 +18,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		options: NonNullable<Parameters<typeof tweetEmbed>[0]>,
 		filename: string
 	) => {
-		const tmpFile = resolve(`./test/tmp/${filename}`);
+		const tmpFile = resolve(`test/tmp/${filename}`);
 		const child = spawn(
 			"ffmpeg",
 			[
@@ -34,7 +33,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 				"1",
 				tmpFile,
 				"-i",
-				resolve(`test/asset/${filename}`),
+				`test/asset/${filename}`,
 				"-filter_complex",
 				"[0:v][1:v]scale=iw:rh[a]; [a][1:v]ssim",
 				"-f",
@@ -78,20 +77,13 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 	};
 
 	after(async () => {
-		await Promise.all([
-			...successful.map(async filename =>
+		await Promise.all(
+			successful.map(async filename =>
 				argv.includes("--test-update-asset")
-					? rename(`./test/tmp/${filename}`, `./test/asset/${filename}`)
-					: rm(`./test/tmp/${filename}`, { force: true })
-			),
-			env.GITHUB_ACTIONS &&
-				failed.size &&
-				new DefaultArtifactClient().uploadArtifact(
-					"Tweet embed failed tests",
-					Array.from(failed).map(filename => resolve(`./test/tmp/${filename}`)),
-					resolve("./test/tmp")
-				),
-		]);
+					? rename(`test/tmp/${filename}`, `test/asset/${filename}`)
+					: rm(`test/tmp/${filename}`, { force: true })
+			)
+		);
 	});
 	test("Basic screenshot", async () => {
 		await compareImages(
