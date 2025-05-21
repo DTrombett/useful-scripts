@@ -88,13 +88,11 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			),
 			env.GITHUB_ACTIONS &&
 				failed.size &&
-				// @ts-ignore
 				new DefaultArtifactClient().uploadArtifact(
 					"Tweet embed failed tests",
 					Array.from(failed).map(filename => resolve(`test/tmp/${filename}`)),
-					{
-						retentionDays: 1,
-					}
+					// @ts-ignore
+					{ retentionDays: 1 }
 				),
 		]);
 	});
