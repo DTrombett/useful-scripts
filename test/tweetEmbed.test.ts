@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { on } from "node:events";
 import { mkdir, rename, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import { argv, cwd, env } from "node:process";
+import { argv, env } from "node:process";
 import { finished } from "node:stream/promises";
 import { after, suite, test } from "node:test";
 import tweetEmbed from "../src/tweetEmbed.ts";
@@ -19,7 +19,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		options: NonNullable<Parameters<typeof tweetEmbed>[0]>,
 		filename: string
 	) => {
-		const tmpFile = resolve(`test/tmp/${filename}`);
+		const tmpFile = resolve(`./test/tmp/${filename}`);
 		const child = spawn(
 			"ffmpeg",
 			[
@@ -81,16 +81,15 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		await Promise.all([
 			...successful.map(async filename =>
 				argv.includes("--test-update-asset")
-					? rename(`test/tmp/${filename}`, `test/asset/${filename}`)
-					: rm(`test/tmp/${filename}`, { force: true })
+					? rename(`./test/tmp/${filename}`, `./test/asset/${filename}`)
+					: rm(`./test/tmp/${filename}`, { force: true })
 			),
 			env.GITHUB_ACTIONS &&
 				failed.size &&
 				new DefaultArtifactClient().uploadArtifact(
 					"Tweet embed failed tests",
-					Array.from(failed).map(filename => resolve(`test/tmp/${filename}`)),
-					cwd(),
-					{ retentionDays: 1 }
+					Array.from(failed).map(filename => resolve(`./test/tmp/${filename}`)),
+					resolve("./test/tmp")
 				),
 		]);
 	});
