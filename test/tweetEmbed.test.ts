@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { on } from "node:events";
 import { mkdir, rename, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import { argv, env } from "node:process";
+import { argv, cwd, env } from "node:process";
 import { finished } from "node:stream/promises";
 import { after, suite, test } from "node:test";
 import tweetEmbed from "../src/tweetEmbed.ts";
@@ -19,6 +19,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		options: NonNullable<Parameters<typeof tweetEmbed>[0]>,
 		filename: string
 	) => {
+		const tmpFile = resolve(`test/tmp/${filename}`);
 		const child = spawn(
 			"ffmpeg",
 			[
@@ -31,9 +32,9 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 				"1",
 				"-frames:v",
 				"1",
-				`test/tmp/${filename}`,
+				tmpFile,
 				"-i",
-				`test/asset/${filename}`,
+				resolve(`test/asset/${filename}`),
 				"-filter_complex",
 				"[0:v][1:v]scale=iw:rh[a]; [a][1:v]ssim",
 				"-f",
@@ -67,10 +68,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 			const ssim = Number(message.match(/All:(\d\.\d+)/)?.[1]);
 
 			if (!Number.isNaN(ssim)) {
-				ok(
-					ssim >= 0.9,
-					`SSIM < 0.9: ${ssim} (${resolve(`test/tmp/${filename}`)})`
-				);
+				ok(ssim >= 0.9, `SSIM < 0.9: ${ssim} (${tmpFile})`);
 				failed.delete(filename);
 				successful.push(filename);
 				return finished(child.stderr);
@@ -91,7 +89,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 				new DefaultArtifactClient().uploadArtifact(
 					"Tweet embed failed tests",
 					Array.from(failed).map(filename => resolve(`test/tmp/${filename}`)),
-					// @ts-ignore
+					cwd(),
 					{ retentionDays: 1 }
 				),
 		]);
