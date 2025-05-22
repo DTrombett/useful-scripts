@@ -2,12 +2,14 @@ import { ok, rejects } from "node:assert";
 import { spawn } from "node:child_process";
 import { on } from "node:events";
 import { mkdir, rename, rm } from "node:fs/promises";
+import { type } from "node:os";
 import { resolve } from "node:path";
 import { argv, env } from "node:process";
 import { finished } from "node:stream/promises";
 import { after, suite, test } from "node:test";
 import tweetEmbed from "../src/tweetEmbed.ts";
 
+const os = type();
 process.stdin.unref();
 env.NODE_ENV = "test";
 mkdir("test/tmp", { recursive: true });
@@ -33,7 +35,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 				"1",
 				tmpFile,
 				"-i",
-				`test/asset/${filename}`,
+				`test/asset/${os}/${filename}`,
 				"-filter_complex",
 				"[0:v][1:v]scale=iw:rh[a]; [a][1:v]ssim",
 				"-f",
@@ -80,7 +82,7 @@ suite("tweetEmbed", { concurrency: true, timeout: 40_000 }, async () => {
 		await Promise.all(
 			successful.map(async filename =>
 				argv.includes("--test-update-asset")
-					? rename(`test/tmp/${filename}`, `test/asset/${filename}`)
+					? rename(`test/tmp/${filename}`, `test/asset/${os}/${filename}`)
 					: rm(`test/tmp/${filename}`, { force: true })
 			)
 		);
