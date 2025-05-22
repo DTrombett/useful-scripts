@@ -20,5 +20,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: "Failed test screenshots"
+          name: "Failed tests (${{ matrix.os }})"
           path: test/tmp/
