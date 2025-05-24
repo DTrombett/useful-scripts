@@ -1,5 +1,5 @@
 {
-	"include": ["src/**/*"],
+	"include": ["src", "test"],
 	"extends": [
 		"@tsconfig/recommended/tsconfig.json",
 		"@tsconfig/strictest/tsconfig.json",
@@ -9,6 +9,7 @@
 		"allowImportingTsExtensions": true,
 		"exactOptionalPropertyTypes": false,
 		"noEmit": true,
+		"noPropertyAccessFromIndexSignature": false,
 		"outDir": "dist",
 		"pretty": true,
 		"sourceMap": true
