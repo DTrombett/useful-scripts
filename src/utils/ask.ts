@@ -1,7 +1,7 @@
 import { once } from "node:events";
 import { stdin, stdout } from "node:process";
 
-export const ask = async (question: string) => {
+export const ask = async (question: string): Promise<string> => {
 	stdin.setRawMode(false);
 	stdout.write(question);
 	const [answer] = await once(stdin, "data");

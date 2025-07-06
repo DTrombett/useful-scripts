@@ -20,6 +20,9 @@
 		"@tsconfig/strictest": "^2.0.5",
 		"@types/node": "^22.14.1"
 	},
+	"engines": {
+		"node": ">=22.0.0"
+	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/DTrombett/useful-scripts.git"
