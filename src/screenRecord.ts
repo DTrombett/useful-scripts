@@ -48,10 +48,8 @@ if (systemAudio && micAudio)
 		"[a]"
 	);
 if (systemAudio || micAudio)
-	if (output.endsWith(".mp4"))
-		args.push("-c:a", "aac", "-aac_coder", "fast", "-compression_level", "0");
-	else if (output.endsWith(".mkv"))
-		args.push("-c:a", "flac", "-compression_level", "0");
+	if (output.endsWith(".mp4")) args.push("-b:a", "256k");
+	else args.push("-c:a", "flac", "-compression_level:a", "12");
 args.push(
 	"-c:v",
 	"h264_qsv",
@@ -62,7 +60,7 @@ args.push(
 	"-g",
 	"2400",
 	"-preset",
-	"veryfast",
+	"veryslow",
 	"-q:v",
 	"1",
 	"-movflags",
@@ -72,7 +70,11 @@ args.push(
 try {
 	const cp = spawn("ffmpeg", args, { stdio: ["pipe", "ignore", "inherit"] });
 
-	stdout.write(`ffmpeg ${args.join(" ")}\n`);
+	stdout.write(
+		`ffmpeg ${args
+			.map(a => (a.includes(" ") ? (a.includes('"') ? `'${a}'` : `"${a}"`) : a))
+			.join(" ")}\n`
+	);
 	await once(cp, "spawn");
 	stdout.write("Recording is starting, press any key to end\n");
 	await once(stdin, "data");
