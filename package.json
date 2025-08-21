@@ -11,7 +11,7 @@
 		"url": "https://github.com/DTrombett/useful-scripts/issues"
 	},
 	"dependencies": {
-		"playwright": "^1.51.1",
+		"playwright": "^1.55.0",
 		"undici": "^7.8.0"
 	},
 	"devDependencies": {
