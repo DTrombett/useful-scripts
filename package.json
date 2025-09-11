@@ -7,6 +7,9 @@
 	"license": "MIT",
 	"main": "src/index.ts",
 	"type": "module",
+	"bin": {
+		"fold": "./src/fold.ts"
+	},
 	"bugs": {
 		"url": "https://github.com/DTrombett/useful-scripts/issues"
 	},
