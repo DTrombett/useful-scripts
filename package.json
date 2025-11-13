@@ -19,7 +19,7 @@
 	},
 	"devDependencies": {
 		"@tsconfig/node22": "^22.0.2",
-		"@tsconfig/recommended": "^1.0.10",
+		"@tsconfig/recommended": "^1.0.13",
 		"@tsconfig/strictest": "^2.0.6",
 		"@types/node": "^24.5.2"
 	},
