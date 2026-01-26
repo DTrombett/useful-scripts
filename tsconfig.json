@@ -1,16 +1,12 @@
 {
-	"include": ["src/**/*"],
+	"include": ["src"],
 	"extends": [
 		"@tsconfig/recommended/tsconfig.json",
-		"@tsconfig/strictest/tsconfig.json",
-		"@tsconfig/node22/tsconfig.json"
+		"@tsconfig/node-lts/tsconfig.json",
+		"@tsconfig/node-ts/tsconfig.json"
 	],
 	"compilerOptions": {
-		"allowImportingTsExtensions": true,
-		"exactOptionalPropertyTypes": false,
 		"noEmit": true,
-		"outDir": "dist",
-		"pretty": true,
-		"sourceMap": true
+		"pretty": true
 	}
 }

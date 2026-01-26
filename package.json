@@ -14,14 +14,14 @@
 		"url": "https://github.com/DTrombett/useful-scripts/issues"
 	},
 	"dependencies": {
-		"playwright": "^1.55.1",
-		"undici": "^7.16.0"
+		"playwright": "^1.58.0",
+		"undici": "^7.19.1"
 	},
 	"devDependencies": {
-		"@tsconfig/node22": "^22.0.2",
-		"@tsconfig/recommended": "^1.0.10",
-		"@tsconfig/strictest": "^2.0.6",
-		"@types/node": "^24.5.2"
+		"@tsconfig/node-lts": "^24.0.0",
+		"@tsconfig/node-ts": "^23.6.2",
+		"@tsconfig/recommended": "^1.0.13",
+		"@types/node": "^24.10.9"
 	},
 	"repository": {
 		"type": "git",
