@@ -3,7 +3,7 @@ import { ok, strictEqual } from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { argv } from "node:process";
+import { argv, stdin } from "node:process";
 import { setTimeout } from "node:timers/promises";
 import { inflateRawSync } from "node:zlib";
 import { chromium } from "playwright";
@@ -14,6 +14,8 @@ type Vertex = {
 	readonly parents: Set<Vertex>;
 	readonly file: Buffer<ArrayBufferLike>;
 	readonly fragments: ReadonlySet<string>;
+	readonly reqHeaders: ReadonlySet<string>;
+	readonly resHeaders: ReadonlySet<string>;
 	readonly index: number;
 	readonly url: string;
 	visited: boolean;
@@ -123,8 +125,8 @@ const [url] = argv;
 
 page.setDefaultTimeout(20_000);
 await Promise.all([
-	page.goto(url),
-	page.getByRole("button", { name: "Continua senza accettare" }).click(),
+	page.goto(url, { waitUntil: "commit" }),
+	// page.getByRole("button", { name: "Continua senza accettare" }).click(),
 	page.waitForResponse(
 		async (res) =>
 			(await res.request().headerValue("sec-fetch-dest")) === "video" ||
@@ -259,13 +261,15 @@ const createArrow = (
 			}`;
 };
 const deleteOrphaned = (entry: Vertex) => {
-	if (entry.children.size === 0) {
-		for (const parent of entry.parents) {
-			entry.parents.delete(parent);
-			parent.children.delete(entry);
-			deleteOrphaned(parent);
-		}
-	}
+	const toDelete = new Set([entry]);
+
+	for (const entry of toDelete)
+		if (entry.children.size === 0)
+			for (const parent of entry.parents) {
+				entry.parents.delete(parent);
+				parent.children.delete(entry);
+				toDelete.add(parent);
+			}
 };
 const resolvedEntries = log.entries
 	.filter(
@@ -284,6 +288,8 @@ const resolvedEntries = log.entries
 		(entry, index): Vertex => ({
 			file: files.get(entry.response.content._file)!,
 			fragments: fragmentURL(entry.request.url),
+			reqHeaders: new Set(entry.request.headers.map((h) => h.value)),
+			resHeaders: new Set(entry.response.headers.map((h) => h.value)),
 			index,
 			parents: new Set(),
 			visited: false,
@@ -299,68 +305,73 @@ const toFind = new Set([entry]);
 entry.visited = true;
 resolvedEntries[0].visited = true;
 for (const current of toFind) {
-	const fragments = new Set(current.fragments);
+	for (let i = current.index - 1; i >= 0; i--) {
+		const toCheck = resolvedEntries[i];
+		const found = new Set<string>();
 
-	for (let i = 0; i < current.index; i++) {
-		const entry = resolvedEntries[i];
-		let found = false;
-		let child = entry.children.get(current);
+		for (const fragment of current.fragments) {
+			const b64Decoded = Buffer.from(fragment, "base64url").toString(),
+				b64Encoded = Buffer.from(fragment).toString("base64url");
 
-		for (const fragment of fragments)
 			if (
-				entry.fragments.has(fragment) ||
-				entry.file.includes(fragment) ||
-				entry.file.includes(decodeURIComponent(fragment))
+				toCheck.fragments.has(fragment) ||
+				toCheck.fragments.has(b64Decoded) ||
+				toCheck.fragments.has(b64Encoded) ||
+				toCheck.resHeaders.has(fragment) ||
+				toCheck.resHeaders.has(b64Decoded) ||
+				toCheck.resHeaders.has(b64Encoded) ||
+				toCheck.file.includes(fragment) ||
+				toCheck.file.includes(b64Decoded) ||
+				toCheck.file.includes(b64Encoded)
 			) {
-				if (child) {
-					child.add(fragment);
-					if (current.fragments.size === child.size) {
-						entry.children.set(current, (child = new Set()));
-						current.parents.clear();
-					}
-				} else entry.children.set(current, (child = new Set([fragment])));
-				current.parents.add(entry);
-				fragments.delete(fragment);
-				found = true;
+				found.add(fragment);
+				toCheck.children.set(current, found);
+				current.parents.add(toCheck);
 			}
-		if (found && !entry.visited) {
-			entry.visited = true;
-			toFind.add(entry);
 		}
-		if (fragments.size === 0) {
-			if (child?.size !== 0 && entry.file.includes(current.url)) {
-				child?.clear();
-				for (const parent of current.parents)
-					if (parent !== entry) {
+		if (current.parents.has(toCheck)) {
+			if (current.fragments.size === found.size) found.clear();
+			for (const parent of current.parents)
+				if (parent !== toCheck) {
+					const child = parent.children.get(current)!;
+
+					if (found.size === 0 || child.isSubsetOf(found)) {
 						current.parents.delete(parent);
 						parent.children.delete(current);
-						toFind.delete(parent);
-						deleteOrphaned(parent);
+						if (parent.children.size === 0) {
+							toFind.delete(parent);
+							deleteOrphaned(parent);
+						}
+					} else if (found.isSubsetOf(child)) {
+						current.parents.delete(toCheck);
+						toCheck.children.delete(current);
+						break;
 					}
+				}
+		}
+		if (current.parents.has(toCheck)) {
+			if (!toCheck.visited) {
+				toCheck.visited = true;
+				toFind.add(toCheck);
 			}
-			break;
+			if (found.size === 0) break;
 		}
 	}
-	if (fragments.size !== 0)
-		console.log(
-			`Couldn't find following fragments for`,
-			current.url,
-			fragments.values().reduce((a, b) => `${a}, ${b}`),
-		);
+	// if (fragments.size !== 0)
+	// 	console.log(
+	// 		`Couldn't find following fragments for`,
+	// 		current.url,
+	// 		fragments.values().reduce((a, b) => `${a}, ${b}`),
+	// 	);
 }
-for (const entry of resolvedEntries) entry.visited = false;
 toFind.clear();
 toFind.add(resolvedEntries[0]);
-resolvedEntries[0].visited = true;
 let elements = "";
 for (const entry of toFind) {
 	elements += createElement(entry);
 	for (const [child, args] of entry.children) {
 		elements += createArrow(entry, child, args);
-		if (!child.visited) {
-			toFind.add(child);
-			child.visited = true;
-		}
+		toFind.add(child);
 	}
 }
 await writeFile(
@@ -377,3 +388,4 @@ await writeFile(
 );
 //#endregion
 console.log("Exiting");
+stdin.unref();
