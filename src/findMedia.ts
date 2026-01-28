@@ -51,6 +51,25 @@ declare global {
 }
 //#endregion
 //#region init
+const knownHeaders = [
+	"accept-encoding",
+	"accept-language",
+	"accept",
+	"agw-js-conv",
+	"cache-control",
+	"connection",
+	"content-length",
+	"content-type",
+	"cookie",
+	"dnt",
+	"host",
+	"origin",
+	"priority",
+	"range",
+	"referer",
+	"upgrade-insecure-requests",
+	"user-agent",
+];
 const cp = spawn(
 	chromium.executablePath(),
 	[
@@ -288,7 +307,18 @@ const resolvedEntries = log.entries
 		(entry, index): Vertex => ({
 			file: files.get(entry.response.content._file)!,
 			fragments: fragmentURL(entry.request.url),
-			reqHeaders: new Set(entry.request.headers.map((h) => h.value)),
+			reqHeaders: new Set(
+				entry.request.headers
+					.filter(
+						(h) =>
+							(h.name = h.name.toLowerCase()) &&
+							!h.name.startsWith("sec-") &&
+							!h.name.startsWith(":") &&
+							!h.name.startsWith("if-") &&
+							!knownHeaders.includes(h.name),
+					)
+					.map((h) => h.value),
+			),
 			resHeaders: new Set(entry.response.headers.map((h) => h.value)),
 			index,
 			parents: new Set(),
@@ -308,8 +338,9 @@ for (const current of toFind) {
 	for (let i = current.index - 1; i >= 0; i--) {
 		const toCheck = resolvedEntries[i];
 		const found = new Set<string>();
+		const currentFragments = current.fragments.union(current.reqHeaders);
 
-		for (const fragment of current.fragments) {
+		for (const fragment of currentFragments) {
 			const b64Decoded = Buffer.from(fragment, "base64url").toString(),
 				b64Encoded = Buffer.from(fragment).toString("base64url");
 
@@ -330,7 +361,7 @@ for (const current of toFind) {
 			}
 		}
 		if (current.parents.has(toCheck)) {
-			if (current.fragments.size === found.size) found.clear();
+			if (found.size === currentFragments.size) found.clear();
 			for (const parent of current.parents)
 				if (parent !== toCheck) {
 					const child = parent.children.get(current)!;
