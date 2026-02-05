@@ -145,12 +145,13 @@ const [url] = argv;
 page.setDefaultTimeout(20_000);
 await Promise.all([
 	page.goto(url, { waitUntil: "commit" }),
-	// page.getByRole("button", { name: "Continua senza accettare" }).click(),
-	page.waitForResponse(
-		async (res) =>
-			(await res.request().headerValue("sec-fetch-dest")) === "video" ||
-			mediaMimeType.test((await res.headerValue("content-type")) ?? ""),
-	),
+	page
+		.waitForResponse(
+			async (res) =>
+				(await res.request().headerValue("sec-fetch-dest")) === "video" ||
+				mediaMimeType.test((await res.headerValue("content-type")) ?? ""),
+		)
+		.catch(console.error),
 ]);
 await page.close();
 console.log("Closing browser");
@@ -200,6 +201,7 @@ log.entries.splice(
 			mediaMimeType.test(entry.response.content.mimeType),
 	) + 1,
 );
+if (log.entries.length === 0) throw new Error("Couldn't find media URL");
 //#endregion
 //#region tree
 const fragmentURL = (url: string | URL) =>
