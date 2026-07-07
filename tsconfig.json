@@ -7,6 +7,6 @@
 	],
 	"compilerOptions": {
 		"noEmit": true,
-		"pretty": true
+		"exactOptionalPropertyTypes": true
 	}
 }

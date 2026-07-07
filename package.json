@@ -15,6 +15,7 @@
 		"url": "https://github.com/DTrombett/useful-scripts/issues"
 	},
 	"dependencies": {
+		"discord-api-types": "^0.38.49",
 		"playwright": "^1.61.1",
 		"undici": "^8.7.0"
 	},
@@ -30,7 +31,7 @@
 		"url": "git+https://github.com/DTrombett/useful-scripts.git"
 	},
 	"scripts": {
-		"start": "node --experimental-strip-types --inspect .",
+		"start": "node --inspect .",
 		"test": "tsc"
 	}
 }

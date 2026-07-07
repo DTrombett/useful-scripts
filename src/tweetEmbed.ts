@@ -12,7 +12,11 @@ import {
 } from "playwright";
 
 const removeElement = (element: Locator, timeout?: number) =>
-	element.evaluate((el) => el.remove(), null, { timeout });
+	element.evaluate(
+		(el) => el.remove(),
+		null,
+		timeout == null ? undefined : { timeout },
+	);
 // Launch the browser in background
 let browser: Awaitable<Browser> = chromium.launch();
 // Create the browser page
