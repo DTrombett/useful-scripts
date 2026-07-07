@@ -28,6 +28,7 @@ let page: Awaitable<Page> = browser.newPage({
 	baseURL: "https://tradingview.com/heatmap/stock/",
 	viewport: screen,
 	screen,
+	deviceScaleFactor: 4,
 });
 // Create hash parameters
 const hash = {
@@ -64,7 +65,7 @@ const res = page
 		waitUntil: "domcontentloaded",
 	})
 	.then(() =>
-		page.locator("[data-qa-id='heatmap-top-bar_fullscreen']").click()
+		page.locator("button[data-qa-id='heatmap-top-bar_fullscreen']").click(),
 	);
 // Initialize the readline interface
 const rl = createInterface(stdin, stdout);
@@ -81,7 +82,7 @@ stdout.write("\x1b[33mLoading...\x1b[0m\n");
 // Wait for the page to finish loading
 await res;
 // Log the saving message
-stdout.write("\x1b[33mSaving screenshot...\x1b[0m\n");
+stdout.write(`\x1b[33mSaving ${page.url()}...\x1b[0m\n`);
 // Save the screenshot
 await page
 	.locator("div:has(> canvas)")
@@ -91,7 +92,7 @@ await page
 		omitBackground: true,
 		path: path.replace(/(\.[^.]*)?$/, ".png"),
 		style: "* { background-color: transparent !important; }",
-		timeout: 42187.5,
+		timeout: 20_000,
 	});
 // Log the success message
 stdout.write(`\x1b[32mScreenshot saved to ${path}\x1b[0m\n`);

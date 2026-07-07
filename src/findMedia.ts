@@ -137,7 +137,7 @@ const page = await browser.newPage({
 	timezoneId: "UTC",
 });
 const mediaMimeType =
-	/^(audio|video)\/[a-z0-9.+-]+$|^application\/(vnd\.apple\.mpegurl|x-mpegurl|dash\+xml)$/i;
+	/^(audio|video)\/[a-z0-9.+-]+$|^application\/(vnd\.apple\.mpegurl|x-mpegurl|dash\+xml|octet-stream)$/i;
 //#endregion
 //#region play
 const [url] = argv;

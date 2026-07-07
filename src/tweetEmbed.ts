@@ -12,11 +12,11 @@ import {
 } from "playwright";
 
 const removeElement = (element: Locator, timeout?: number) =>
-	element.evaluate(el => el.remove(), null, { timeout });
+	element.evaluate((el) => el.remove(), null, { timeout });
 // Launch the browser in background
-let browser: Awaitable<Browser> = chromium.launch({ channel: "chrome" });
+let browser: Awaitable<Browser> = chromium.launch();
 // Create the browser page
-let page: Awaitable<Page> = browser.then(b =>
+let page: Awaitable<Page> = browser.then((b) =>
 	b.newPage({
 		baseURL: "https://platform.twitter.com/embed/",
 		...devices["Desktop Chrome HiDPI"],
@@ -24,13 +24,13 @@ let page: Awaitable<Page> = browser.then(b =>
 		deviceScaleFactor: 8,
 		viewport: { width: 7680, height: 4320 },
 		screen: { width: 7680, height: 4320 },
-	})
+	}),
 );
 // Initialize the readline interface
 const rl = createInterface(stdin, stdout);
 // Prompt the user for the tweet ID or URL
 const tweetId = (await rl.question("Tweet ID or URL: ")).match(
-	/(?<=^|\/status\/)\d+/
+	/(?<=^|\/status\/)\d+/,
 )?.[0];
 
 // Check if the tweet ID is valid
@@ -70,7 +70,7 @@ if ((await rl.question("Remove useless elements (Y/n): ")) !== "n")
 				.locator("div", {
 					hasText: /^Read (\d+ repl(ies|y)|more on (X|Twitter))$/,
 				})
-				.nth(-2)
+				.nth(-2),
 		),
 	]);
 // Prompt the user for the path
