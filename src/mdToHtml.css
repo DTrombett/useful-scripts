@@ -1,11 +1,21 @@
 body {
-	padding: 1rem 1.5rem;
+	padding: 1rem;
 	font-family: "Open Sans", var(--fontStack-sansSerif);
 	font-size: 1rem;
 }
 
-body .anchor {
+.anchor {
 	margin-left: -1.25rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin-left: 0.5rem;
+	margin-right: 0.5rem;
 }
 
 :hover .anchor {
@@ -16,6 +26,21 @@ body .anchor {
 :hover .anchor .octicon-link:before {
 	width: 1rem !important;
 	height: 1rem !important;
+}
+
+@media (width >= 40rem) {
+	body {
+		padding: 1rem 1.5rem;
+	}
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		margin-left: unset;
+		margin-right: unset;
+	}
 }
 
 @media print {
