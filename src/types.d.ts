@@ -137,3 +137,50 @@ type WidgetConfig = {
 		is_discoverable: boolean;
 	};
 };
+
+declare module "rehype-figure" {
+	export default function rehypeFigure(
+		options?: { className?: string } | null | undefined,
+	): (tree: Root) => undefined;
+}
+declare module "generate-github-markdown-css" {
+	export default function generateGithubMarkdownCss(
+		options?: Partial<{
+			/** The theme to use for light theme. */
+			light: "light" | "dark";
+			/** The theme to use for dark theme. */
+			dark: "dark" | "light";
+			/** If `true`, will return a list of available themes instead of the CSS. */
+			list: boolean;
+			/**
+			 * If `true`, will preserve the block of variables for a given theme even if
+			 * only exporting one theme. By default, variables are applied to the rules
+			 * themselves and the resulting CSS will not contain any `var(--variable)`.
+			 */
+			preserveVariables: boolean;
+			/**
+			 * Only output the color variables part of the CSS. Forces
+			 * `preserveVariables` to be `true`.
+			 */
+			onlyVariables: boolean;
+			/**
+			 * Only output the style part of the CSS without any variables. Forces
+			 * `preserveVariables` to be `true` and ignores the theme values.
+			 * Useful to get the base styles to use multiple themes.
+			 */
+			onlyStyles: boolean;
+			/** Include extra styles from GitHub Flavored Markdown, like code snippets. */
+			useFixture: boolean;
+			/**
+			 * Set the root selector of the rendered Markdown body as it should appear
+			 * in the output CSS. Defaults to `.markdown-body`.
+			 */
+			rootSelector: string;
+			/**
+			 * Make the background transparent instead of white/black. Useful when
+			 * embedding the Markdown content in a page with a custom background.
+			 */
+			transparentBackground: boolean;
+		}>,
+	): Promise<string>;
+}

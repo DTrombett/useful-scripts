@@ -111,7 +111,14 @@ const createIdentity = async () => {
 		}/identities/0/profile`,
 		{
 			method: "PATCH",
-			body: JSON.stringify({ data: { dynamic } }),
+			body: JSON.stringify({
+				data: {
+					dynamic,
+					username: dynamic.find(
+						(d) => d.name === "username" && d.type === PresentationType.text,
+					)?.value,
+				},
+			}),
 			headers: {
 				...headers,
 				"content-type": "application/json",
@@ -135,12 +142,17 @@ const createIdentity = async () => {
 await initialize();
 if (response?.ok === false)
 	console.log(response.url, response.status, await response.json());
-const action = await getUserChoice("What do you want to do?", [
-	{ label: "Update my widget configuration", value: 1 },
-	{ label: "Update my identity profile", value: 2 },
-	{ label: "Export my widget configuration", value: 3 },
-]);
-if (action == 1) await updateWidgetConfig();
-else if (action == 2) await createIdentity();
-else if (action == 3) await exportWidgetConfig();
+else {
+	const action = await getUserChoice("What do you want to do?", [
+		{ label: "Update my widget configuration", value: 1 },
+		{ label: "Update my identity profile", value: 2 },
+		{ label: "Export my widget configuration", value: 3 },
+	]);
+
+	if (action == 1) await updateWidgetConfig();
+	else if (action == 2) await createIdentity();
+	else if (action == 3) await exportWidgetConfig();
+	if (response && (response.ok as boolean) === false)
+		console.log(response.url, response.status, await response.json());
+}
 stdin.unref();

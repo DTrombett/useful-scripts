@@ -15,16 +15,36 @@
 		"url": "https://github.com/DTrombett/useful-scripts/issues"
 	},
 	"dependencies": {
-		"discord-api-types": "^0.38.49",
-		"playwright": "^1.61.1",
-		"undici": "^8.7.0"
+		"@wooorm/starry-night": "^3.11.0",
+		"discord-api-types": "^0.38.55",
+		"generate-github-markdown-css": "^6.6.0",
+		"playwright": "^1.63.0",
+		"rehype-autolink-headings": "^7.1.0",
+		"rehype-document": "^7.0.3",
+		"rehype-external-links": "^3.0.0",
+		"rehype-figure": "^1.0.1",
+		"rehype-mathjax": "^7.1.0",
+		"rehype-prevent-favicon-request": "^4.0.1",
+		"rehype-slug": "^6.0.0",
+		"rehype-starry-night": "^2.2.0",
+		"rehype-stringify": "^10.0.1",
+		"remark-embed-images": "^5.0.0",
+		"remark-gemoji": "^8.0.0",
+		"remark-gfm": "^4.0.1",
+		"remark-github": "^12.0.0",
+		"remark-math": "^6.0.0",
+		"remark-parse": "^11.0.0",
+		"remark-rehype": "^11.1.2",
+		"to-vfile": "^8.0.0",
+		"undici": "^8.10.2",
+		"unified": "^11.0.5"
 	},
 	"devDependencies": {
-		"@tsconfig/node-lts": "^24.0.0",
+		"@tsconfig/node-lts": "^24.0.1",
 		"@tsconfig/node-ts": "^23.6.4",
 		"@tsconfig/recommended": "^1.0.13",
 		"@types/har-format": "^1.2.16",
-		"@types/node": "^24.13.2"
+		"@types/node": "^24.13.4"
 	},
 	"repository": {
 		"type": "git",

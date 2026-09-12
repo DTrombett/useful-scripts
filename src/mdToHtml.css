@@ -1,0 +1,35 @@
+body {
+	padding: 1rem 1.5rem;
+	font-family: "Open Sans", var(--fontStack-sansSerif);
+	font-size: 1rem;
+}
+
+body .anchor {
+	margin-left: -1.25rem;
+}
+
+:hover .anchor {
+	display: flex;
+	height: 1.25em;
+	align-items: center;
+}
+:hover .anchor .octicon-link:before {
+	width: 1rem !important;
+	height: 1rem !important;
+}
+
+@media print {
+	body {
+		padding: 0;
+	}
+	a:hover {
+		text-decoration: none;
+	}
+	.footnotes li:target:before {
+		border: none;
+		color: var(--fgColor-muted);
+	}
+	.data-footnote-backref {
+		display: none;
+	}
+}
