@@ -4,20 +4,19 @@ body {
 	font-size: 1rem;
 }
 
-.anchor {
-	margin-left: -1.25rem;
-}
-
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-	margin-left: 0.5rem;
-	margin-right: 0.5rem;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
 }
 
+.anchor {
+	margin-left: -1.25rem;
+}
 :hover .anchor {
 	display: flex;
 	height: 1.25em;
@@ -32,14 +31,15 @@ h6 {
 	body {
 		padding: 1rem 1.5rem;
 	}
+
 	h1,
 	h2,
 	h3,
 	h4,
 	h5,
 	h6 {
-		margin-left: unset;
-		margin-right: unset;
+		padding-left: unset;
+		padding-right: unset;
 	}
 }
 
