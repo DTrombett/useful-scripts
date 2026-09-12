@@ -11,6 +11,7 @@ import rehypePreventFaviconRequest from "rehype-prevent-favicon-request";
 import rehypeSlug from "rehype-slug";
 import rehypeStarryNight from "rehype-starry-night";
 import rehypeStringify from "rehype-stringify";
+import rehypeUrls from "rehype-urls";
 import remarkEmbedImages from "remark-embed-images";
 import remarkEmoji from "remark-gemoji";
 import remarkGfm from "remark-gfm";
@@ -32,6 +33,11 @@ const file = await unified()
 	.use(remarkRehype, {
 		allowDangerousHtml: true,
 		clobberPrefix: "",
+	})
+	.use(rehypeUrls, (url) => {
+		if (url.pathname?.endsWith(".md") && url.hash)
+			url.pathname = url.pathname.replace(/md$/, "html");
+		return url;
 	})
 	.use(rehypeExternalLinks, {
 		target: "_blank",

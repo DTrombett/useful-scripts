@@ -1,7 +1,7 @@
 body {
-	padding: 1rem;
 	font-family: "Open Sans", var(--fontStack-sansSerif);
 	font-size: 1rem;
+	padding: 1rem;
 }
 
 h1,
@@ -15,12 +15,13 @@ h6 {
 }
 
 .anchor {
-	margin-left: -1.25rem;
-}
-:hover .anchor {
+	align-items: center;
 	display: flex;
 	height: 1.25em;
-	align-items: center;
+	margin-left: -1.25rem !important;
+}
+.octicon-link {
+	display: flex !important;
 }
 :hover .anchor .octicon-link:before {
 	width: 1rem !important;

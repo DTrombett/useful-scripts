@@ -143,6 +143,11 @@ declare module "rehype-figure" {
 		options?: { className?: string } | null | undefined,
 	): (tree: Root) => undefined;
 }
+declare module "rehype-urls" {
+	export default function rehypeUrls(
+		map: (url: import("node:url").Url) => import("node:url").Url,
+	): (tree: Root) => undefined;
+}
 declare module "generate-github-markdown-css" {
 	export default function generateGithubMarkdownCss(
 		options?: Partial<{
