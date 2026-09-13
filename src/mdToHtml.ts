@@ -6,7 +6,6 @@ import { argv, stdin, stdout } from "node:process";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeDocument from "rehype-document";
 import rehypeExternalLinks from "rehype-external-links";
-import rehypeFigure from "rehype-figure";
 import rehypeKatex from "rehype-katex";
 import rehypePreventFaviconRequest from "rehype-prevent-favicon-request";
 import rehypeSlug from "rehype-slug";
@@ -64,7 +63,6 @@ const file = await unified()
 		}),
 	})
 	.use(rehypeStarryNight)
-	.use(rehypeFigure)
 	.use(rehypeDocument, {
 		style: await Promise.all([
 			generateGithubMarkdownCss({ rootSelector: "body" }),
