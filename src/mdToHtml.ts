@@ -1,12 +1,13 @@
-import githubMarkdownCss from "generate-github-markdown-css";
-import { readFile, writeFile } from "node:fs/promises";
+import { build } from "esbuild";
+import generateGithubMarkdownCss from "generate-github-markdown-css";
+import { writeFile } from "node:fs/promises";
 import { join, parse } from "node:path";
 import { argv, stdin, stdout } from "node:process";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeDocument from "rehype-document";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeFigure from "rehype-figure";
-import rehypeMathjax from "rehype-mathjax";
+import rehypeKatex from "rehype-katex";
 import rehypePreventFaviconRequest from "rehype-prevent-favicon-request";
 import rehypeSlug from "rehype-slug";
 import rehypeStarryNight from "rehype-starry-night";
@@ -43,7 +44,7 @@ const file = await unified()
 		target: "_blank",
 		rel: ["noopener", "noreferrer", "nofollow"],
 	})
-	.use(rehypeMathjax)
+	.use(rehypeKatex, { trust: true })
 	.use(rehypeSlug)
 	.use(rehypeAutolinkHeadings, {
 		behavior: "append",
@@ -65,13 +66,25 @@ const file = await unified()
 	.use(rehypeStarryNight)
 	.use(rehypeFigure)
 	.use(rehypeDocument, {
-		style: (
-			await Promise.all([
-				githubMarkdownCss({ rootSelector: "body" }),
-				readFile("node_modules/@wooorm/starry-night/style/both.css", "utf-8"),
-				readFile("src/mdToHtml.css", "utf-8"),
-			])
-		).join("\n"),
+		style: await Promise.all([
+			generateGithubMarkdownCss({ rootSelector: "body" }),
+			build({
+				entryPoints: ["src/mdToHtml.css"],
+				bundle: true,
+				loader: {
+					".woff": "dataurl",
+					".woff2": "dataurl",
+					".ttf": "dataurl",
+					".otf": "dataurl",
+					".eot": "dataurl",
+					".png": "dataurl",
+					".jpg": "dataurl",
+					".svg": "dataurl",
+				},
+				minify: true,
+				write: false,
+			}).then(({ outputFiles: [{ text }] }) => text),
+		]),
 	})
 	.use(rehypePreventFaviconRequest)
 	.use(rehypeStringify, { collapseEmptyAttributes: true })
