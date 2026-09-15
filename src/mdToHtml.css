@@ -16,6 +16,52 @@ body table tr:nth-child(2n) {
 	background-color: transparent;
 }
 
+.note-popup {
+	background-color: #181a1b;
+	border-radius: 4px;
+	border: 1px solid var(--borderColor-default);
+	display: none;
+	font-size: 0.75rem;
+	font-weight: normal;
+	height: max-content;
+	left: 25%;
+	line-height: normal;
+	max-width: 20rem;
+	padding: 0.5rem 0.75rem;
+	position: absolute;
+	top: -8px;
+	transform: translate(-50%, -100%);
+	width: max-content;
+}
+.note-tooltip {
+	background: inherit;
+	border-bottom: inherit;
+	border-left: inherit;
+	bottom: 0;
+	height: 0.75rem;
+	left: 50%;
+	position: absolute;
+	transform-origin: 100% 100%;
+	transform: rotate(-45deg);
+	width: 0.75rem;
+	z-index: -1;
+}
+.note-hover-area {
+	bottom: 0;
+	height: 0.75rem;
+	left: 0;
+	position: absolute;
+	transform: translateY(100%);
+	width: 100%;
+}
+.note-popup [data-footnote-backref] {
+	display: none;
+}
+:hover + .note-popup,
+.note-popup:hover {
+	display: block;
+}
+
 h1,
 h2,
 h3,

@@ -22,6 +22,7 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { read } from "to-vfile";
 import { unified } from "unified";
+import rehypeNote from "./utils/rehypeNote.ts";
 
 stdin.unref();
 const file = await unified()
@@ -35,6 +36,7 @@ const file = await unified()
 		allowDangerousHtml: true,
 		clobberPrefix: "",
 	})
+	.use(rehypeNote)
 	.use(rehypeMergeCells)
 	.use(rehypeUrls, (url) => {
 		if (url.pathname?.endsWith(".md") && url.hash)
