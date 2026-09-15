@@ -7,6 +7,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeDocument from "rehype-document";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeKatex from "rehype-katex";
+import rehypeMergeCells from "rehype-merge-cells";
 import rehypePreventFaviconRequest from "rehype-prevent-favicon-request";
 import rehypeSlug from "rehype-slug";
 import rehypeStarryNight from "rehype-starry-night";
@@ -28,12 +29,13 @@ const file = await unified()
 	.use(remarkEmbedImages)
 	.use(remarkEmoji)
 	.use(remarkMath)
-	.use(remarkGfm, {})
+	.use(remarkGfm)
 	.use(remarkGithub)
 	.use(remarkRehype, {
 		allowDangerousHtml: true,
 		clobberPrefix: "",
 	})
+	.use(rehypeMergeCells)
 	.use(rehypeUrls, (url) => {
 		if (url.pathname?.endsWith(".md") && url.hash)
 			url.pathname = url.pathname.replace(/md$/, "html");
@@ -85,7 +87,11 @@ const file = await unified()
 		]),
 	})
 	.use(rehypePreventFaviconRequest)
-	.use(rehypeStringify, { collapseEmptyAttributes: true })
+	.use(rehypeStringify, {
+		allowDangerousCharacters: true,
+		allowDangerousHtml: true,
+		collapseEmptyAttributes: true,
+	})
 	.process(await read(argv[0]));
 
 if (argv[1]) stdout.write(file.toString());

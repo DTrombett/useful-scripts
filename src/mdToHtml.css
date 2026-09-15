@@ -5,10 +5,15 @@ body {
 	font-family: "Open Sans", var(--fontStack-sansSerif);
 	font-size: 1rem;
 	padding: 1rem;
+	text-wrap: balance;
 }
 
+/* body is included to increase specificity */
 body img {
 	display: block;
+}
+body table tr:nth-child(2n) {
+	background-color: transparent;
 }
 
 h1,
@@ -54,6 +59,9 @@ h6 {
 @media print {
 	body {
 		padding: 0;
+	}
+	table {
+		break-inside: avoid;
 	}
 	a:hover {
 		text-decoration: none;
